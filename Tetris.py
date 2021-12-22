@@ -41,8 +41,23 @@ class Tetris():
         if not self.game_over(self.y, self.board):
             self.x, self.y, self.board, self.score = self.move(self.x, self.y, self.board, self.score, action)
         
+               
+        return (self.x, self.y, done)
+    
+    def tick(self):        
+        # Let piece fall 
+        if not self.game_over(self.y, self.board):
+            if y == 23 or self.board[y+1,x] != 0:
+                # Hit floor or other piece
+                # Set PLACED to true
+                pass
+            else:
+                ny = y + 1 #Drop down
+        
+        self.y = ny
+        
         # return observation, reward, done
-        done = self.game_over(self.y, self.board)        
+        done = self.game_over(self.y, self.board) 
         return (self.x, self.y, done)
         
     def render(self):
@@ -104,12 +119,6 @@ class Tetris():
         
     def move(self, x, y, board, score, action):
         nx, ny = x, y
-
-        if y == 23 or board[y+1,x] != 0:
-            print('Floor')
-            pass
-        else:
-            ny = y + 1 #Drop down
         
         if action=='left':
             if nx>0:
@@ -142,6 +151,7 @@ class Tetris():
         board[self.y, self.x] = 1
         return (self.x, self.y, board, score)
 
+#%%
 # Initialize the environment
 env = Tetris()
 env.reset()
@@ -159,11 +169,8 @@ done = False
 clock = pygame.time.Clock()
 
 while not exit_program:
-    if render:
-        env.render()
-    
     clock.tick(40)
-    
+        
     # Process game events
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -183,10 +190,19 @@ while not exit_program:
     # AI controller
     if runai:
         pass
-
+    
+    # Human controller
     else:
         if action_taken:
             x, y, done = env.step(action)
             action_taken = False
+            
+    # Process game tick
+    env.tick()
+            
+    if render:
+        env.render()
+    
+    
 
 env.close()
