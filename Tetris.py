@@ -5,7 +5,7 @@
 import pygame
 import numpy as np
 
-#%%
+
 
 class Tetris():    
     # Rendering?
@@ -151,7 +151,7 @@ class Tetris():
         board[self.y, self.x] = 1
         return (self.x, self.y, board, score)
 
-#%%
+
 # Initialize the environment
 env = Tetris()
 env.reset()
