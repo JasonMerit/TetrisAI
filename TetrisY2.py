@@ -143,11 +143,13 @@ class Piece(object):
     def __init__(self, x, y, shape):
         self.x = x
         self.y = y
-        self.shape = shape
+        self.shape = shape # The drawn shape as seen above
         self.color = shape_colors[shapes.index(shape)]
-        self.rotation = 0
+        self.rotation = 0 # Index of rotation
     
-	
+def create_piece(): # Change here
+    # (Spawn position and random choice of pieces)
+    return Piece(5, 2, random.choice(shapes))
 
 def create_grid(locked_positions={}):
     # grid is a matrix of positions of colors
@@ -160,27 +162,27 @@ def create_grid(locked_positions={}):
                 grid[i][j] = c
     return grid
 
-def convert_shape_format(shape):
+def convert_shape_format(piece):
     positions = []
-    format = shape.shape[shape.rotation % len(shape.shape)] # Redundant % due to input
+    format = piece.shape[piece.rotation % len(piece.shape)] # Redundant % due to input
     
     for i, line in enumerate(format):
         row = list(line)
         for j, column in enumerate(row):
             if column == '0':
-                positions.append((shape.x + j, shape.y + i))
+                positions.append((piece.x + j, piece.y + i))
         
     for i, pos in enumerate(positions):
         positions[i] = (pos[0] - 2, pos[1] - 4)
         
     return positions
 
-def valid_space(shape, grid):
+def valid_space(piece, grid):
     # Create list of valid empty positions
     accepted_pos = [[(j, i) for j in range(10) if grid[i][j] == black] for i in range(20)]
     accepted_pos = [j for sub in accepted_pos for j in sub] # Rewrite to remove outer nest
     
-    formatted = convert_shape_format(shape)
+    formatted = convert_shape_format(piece)
     
     for pos in formatted:
         if pos not in accepted_pos:
@@ -193,12 +195,7 @@ def check_lost(positions):
         x, y = pos
         if y < 0: # WHEN DED?
             return True
-    
     return False
-
-def get_shape(): # Change here
-	return Piece(5, 0, random.choice(shapes))
-
 
 def draw_text_middle(text, size, color, surface):
     font = pygame.font.SysFont('comicsans', size, bold = True)
@@ -216,7 +213,7 @@ def draw_grid(surface, grid):
     
 
 def clear_rows(grid, locked):
-    
+    # Clears rows and returns score
     inc = 0
     for i in range(len(grid)-1, -1, -1): # Loop backwards
         row = grid[i]
@@ -273,7 +270,6 @@ def get_max_score():
         
 def draw_window(surface, grid, score=0, last_score = 0):
     surface.fill(black)
-    pygame.font.init()
     
     # Title
     font = pygame.font.SysFont('comicsans', 60)
@@ -299,7 +295,6 @@ def draw_window(surface, grid, score=0, last_score = 0):
             pygame.draw.rect(surface, grid[i][j], (top_left_x + j*block_size, top_left_y + i*block_size, block_size, block_size), 0)
     
     pygame.draw.rect(surface, (180,82,80), (top_left_x, top_left_y, play_width, play_height), 4)
-    
     draw_grid(surface, grid)
     
 def main(win):
@@ -308,8 +303,8 @@ def main(win):
     grid = create_grid(locked_positions)
     change_piece = False
     run = True
-    current_piece = get_shape()
-    next_piece = get_shape()
+    current_piece = create_piece()
+    next_piece = create_piece()
     clock = pygame.time.Clock()
     fall_time = 0
     fall_speed = 0.72
@@ -366,6 +361,7 @@ def main(win):
                     while valid_space(current_piece, grid):
                         current_piece.y += 1
                     current_piece.y -= 1
+                    change_piece = True # Instantly move on
                 
         # Check if piece is done
         shape_pos = convert_shape_format(current_piece)
@@ -382,7 +378,7 @@ def main(win):
                 p = (pos[0], pos[1])
                 locked_positions[p] = current_piece.color
             current_piece = next_piece
-            next_piece = get_shape()
+            next_piece = create_piece()
             change_piece = False
             # Only clear row after the current piece has been placed
             score += clear_rows(grid, locked_positions)
