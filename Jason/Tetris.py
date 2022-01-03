@@ -106,7 +106,11 @@ class Tetris():
     
     # Rendering Dimensions
     screenSize = 600
-    cellSize = 20
+    cell_size = 25
+    height = 20
+    width = 10
+    top_left_y = screenSize / 2 - height*cell_size / 2
+    top_left_x = screenSize / 2 - width*cell_size / 2
     offset = 100
 
     # Colors
@@ -129,8 +133,6 @@ class Tetris():
         self.piece = Piece(random.randint(0,6))
         self.next_piece = Piece(random.randint(0,6))
 
-    
-                
     def step(self, action):
         # Move piece and undo if invalid move
         if action == "left":
@@ -144,9 +146,16 @@ class Tetris():
     
     def _valid_position(self):
         """
-        Returns whether the current position is valid
+        Returns whether the current position is valid.
+        Assumes piece is always within bounds of board.
         """
         size = len(self.piece.shape)
+        
+        # Get part of board that piece inhabits
+        sx = max(size + self.piece.x - 10, 0) # Determine if sub-board exceeds board
+        sy = max(size + self.piece.y - 22, 0) # 0 if it doesn't
+        n1, n2 = np.arange(size - sx) + self.piece.x, np.arange(size-sy) + self.piece.y
+        sub_board = board[n2[:,None], n1[None,:]]
         
         return True
     
@@ -174,14 +183,15 @@ class Tetris():
         # Clear the screen
         self.screen.fill(self.black)
         
-        # Draw board
+        # Draw grid
         border = 0.5
-        pygame.draw.rect(self.screen, self.grey, pygame.Rect(150-2,100-2,200+3,480+3))
-        for i in range(len(self.board[0])):
-            for j in range(len(self.board)):
-                val = self.board[j,i]
-                col = self.red if val != 0 else self.black
-                pygame.draw.rect(self.screen, col, pygame.Rect(150+self.cellSize*i+border,100+self.cellSize*j+border,self.cellSize-2*border,self.cellSize-2*border))
+        pygame.draw.rect(self.screen, self.grey, (self.top_left_x, self.top_left_y, self.width*self.cell_size, self.height*self.cell_size))
+        if True:
+            for i in range(self.width):
+                for j in range(self.height):
+                    val = self.board[j,i]
+                    col = self.red if val != 0 else self.black
+                    pygame.draw.rect(self.screen, col, pygame.Rect(150+self.cell_size*i+border,100+self.cell_size*j+border,self.cell_size-2*border,self.cell_size-2*border))
                
 
 
@@ -189,13 +199,13 @@ class Tetris():
         self.screen.blit(text, (790-text.get_width(), 10))
 
         # Draw game over or you won       
-        if self.game_over(self.y, self.board):
-            msg = 'Game over!'
-            col = self.badColor
-            text = self.bigfont.render(msg, True, col)
-            textpos = text.get_rect(centerx=self.background.get_width()/2)
-            textpos.top = 300
-            self.screen.blit(text, textpos)
+        #if self.game_over(self.y, self.board):
+         #   msg = 'Game over!'
+          #  col = self.badColor
+           # text = self.bigfont.render(msg, True, col)
+            #textpos = text.get_rect(centerx=self.background.get_width()/2)
+           # textpos.top = 300
+           # self.screen.blit(text, textpos)
 
         # Display
         pygame.display.flip()
@@ -301,7 +311,7 @@ while run:
     # Human controller
     else:
         if action_taken:
-            x, y, done = env.step(action)
+            env.step(action)
             action_taken = False
             
     # Process game tick
