@@ -4,8 +4,101 @@
  
 import pygame
 import numpy as np
+import random
 
 
+class Piece():
+    """
+    Piece class representing a tetromino.
+    """
+    
+    S = np.array([[[0,0,0],
+                   [0,1,1],
+                   [1,1,0]],
+                  [[0,1,0],
+                   [0,1,1],
+                   [0,0,1]]])
+
+    Z = np.array([[[0,0,0],
+                   [1,1,0],
+                   [0,1,1]],
+                  [[0,0,1],
+                   [0,1,1],
+                   [0,1,0]]])
+
+    T = np.array([[[0,0,0],
+                   [1,1,1],
+                   [0,1,0]],
+                  [[0,1,0],
+                   [1,1,0],
+                   [0,1,0]],
+                  [[0,1,0],
+                   [1,1,1],
+                   [0,0,0]],
+                  [[0,1,0],
+                   [0,1,1],
+                   [0,1,0]]])
+
+    L = np.array([[[0,0,0],
+                   [1,1,1],
+                   [1,0,0]],
+                  [[1,1,0],
+                   [0,1,0],
+                   [0,1,0]],
+                  [[0,0,1],
+                   [1,1,1],
+                   [0,0,0]],
+                  [[0,1,0],
+                   [0,1,0],
+                   [0,1,1]]])
+
+    J = np.array([[[0,0,0],
+                   [1,1,1],
+                   [0,0,1]],
+                  [[0,1,0],
+                   [1,1,0],
+                   [0,1,0]],
+                  [[1,0,0],
+                   [1,1,1],
+                   [0,0,0]],
+                  [[0,1,1],
+                   [0,1,0],
+                   [0,1,0]]])
+
+    O = np.array([[[0,0,0,0],
+                   [0,1,1,0],
+                   [0,1,1,0],
+                   [0,0,0,0]]])
+
+    I = np.array([[[0,0,0,0],
+                   [0,0,0,0],
+                   [1,1,1,1],
+                   [0,0,0,0]],
+                  [[0,0,1,0],
+                   [0,0,1,0],
+                   [0,0,1,0],
+                   [0,0,1,0]]])
+
+
+    shapes = [S, Z, T, L, J, O, I]
+    shape_colors = [(0, 255, 0), (255, 0, 0), (0, 255, 255), (255, 255, 0), (255, 165, 0), (0, 0, 255), (128, 0, 128)]
+    
+    def __init__(self, tetromino):
+        """
+        Initialize the object positioned at the top of board
+        :param teromino: shape of piece (int)
+        :return: None
+        """
+        self.x, self.y = 4, 0
+        self.rotation = 0
+        self.tetromino = tetromino
+        self.shape = self.shapes[tetromino][self.rotation]
+        self.color = self.shape_colors[tetromino]
+    
+    def rotate(self):
+        num_rotations = len(self.shapes[self.tetromino])
+        self.rotation = (self.rotation + 1) % num_rotations
+                
 
 class Tetris():    
     # Rendering?
@@ -31,34 +124,48 @@ class Tetris():
     def __init__(self, state=None):
         pygame.init()
         self.reward = 0
-        self.x, self.y, self.board, self.score = self.new_game()
-        
-    def get_state(self):
-        return (self.x, self.y)
-            
+        self.score = 0
+        self.board = self.new_game()
+        self.piece = Piece(random.randint(0,6))
+        self.next_piece = Piece(random.randint(0,6))
+
+    
+                
     def step(self, action):
-        # Move piece
-        if not self.game_over(self.y, self.board):
-            self.x, self.y, self.board, self.score = self.move(self.x, self.y, self.board, self.score, action)
+        # Move piece and undo if invalid move
+        if action == "left":
+            self.piece.x -= 1
+            if self._valid_position():
+                self.piece.x += 1
+        elif action == "right":
+            self.piece.x += 1
+            if self._valid_position():
+                self.piece.x -= 1
+    
+    def _valid_position(self):
+        """
+        Returns whether the current position is valid
+        """
+        size = len(self.piece.shape)
         
-               
-        return (self.x, self.y, done)
+        return True
+    
     
     def tick(self):        
         # Let piece fall 
-        if not self.game_over(self.y, self.board):
-            if y == 23 or self.board[y+1,x] != 0:
+        #if not self.game_over(self.y, self.board):
+         #   if y == 23 or self.board[y+1,x] != 0:
                 # Hit floor or other piece
                 # Set PLACED to true
                 pass
-            else:
-                ny = y + 1 #Drop down
+          #  else:
+           #     ny = y + 1 #Drop down
         
-        self.y = ny
+        #self.y = ny
         
         # return observation, reward, done
-        done = self.game_over(self.y, self.board) 
-        return (self.x, self.y, done)
+        #done = self.game_over(self.y, self.board) 
+        #return (self.x, self.y, done)
         
     def render(self):
         if not self.rendering:
@@ -94,7 +201,7 @@ class Tetris():
         pygame.display.flip()
 
     def reset(self):
-        self.x, self.y, self.board, self.score = self.new_game()
+        self.board = self.new_game()
 
     def close(self):
         pygame.quit()
@@ -145,21 +252,21 @@ class Tetris():
         return (nx, ny, board, score)
        
     def new_game(self):
-        board = np.zeros([24,10])
-        score = 0
-        self.x, self.y = 4, 0
-        board[self.y, self.x] = 1
-        return (self.x, self.y, board, score)
+        board = np.zeros([22,10])
+        return board
+    
+    def get_state(self):
+        return self.board
 
 
 # Initialize the environment
 env = Tetris()
 env.reset()
-x, y = env.get_state()
+board = env.get_state()
 
 # Definitions and default settings
 actions = ['left', 'right', 'up', 'down']
-exit_program = False
+run = True
 action_taken = False
 slow = True
 runai = False
@@ -168,16 +275,16 @@ done = False
 
 clock = pygame.time.Clock()
 
-while not exit_program:
+while run:
     clock.tick(40)
         
     # Process game events
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
-            exit_program = True
+            run = False
         if event.type == pygame.KEYDOWN:
             if event.key in [pygame.K_ESCAPE, pygame.K_q]:
-                exit_program = True
+                run = False
             if event.key == pygame.K_RIGHT:
                 action, action_taken = "right", True
             if event.key == pygame.K_LEFT:
