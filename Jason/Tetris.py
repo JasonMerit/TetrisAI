@@ -135,19 +135,19 @@ class Tetris():
 
     def step(self, action):
         # Move piece and undo if invalid move
-        if action == "left":
+        if action == "left" and self.piece.x > 0:
             self.piece.x -= 1
-            if self._valid_position():
+            if not self._valid_position():
                 self.piece.x += 1
-        elif action == "right":
+        elif action == "right" and self.piece.x < 13:
             self.piece.x += 1
-            if self._valid_position():
+            if not self._valid_position():
                 self.piece.x -= 1
     
     def _valid_position(self):
         """
         Returns whether the current position is valid.
-        Assumes piece is always within bounds of board.
+        Assumes piece is positioned inside board.
         """
         size = len(self.piece.shape)
         
@@ -156,6 +156,14 @@ class Tetris():
         sy = max(size + self.piece.y - 22, 0) # 0 if it doesn't
         n1, n2 = np.arange(size - sx) + self.piece.x, np.arange(size-sy) + self.piece.y
         sub_board = board[n2[:,None], n1[None,:]]
+        
+        #
+        
+        # Get lines of board that piece inhabits
+        n1, n2 = np.arange(size) + self.piece.x, np.arange(size) + self.piece.y
+        sub_board = board[n2[:,None], n1[None,:]]
+        
+        
         
         return True
     
@@ -184,22 +192,43 @@ class Tetris():
         self.screen.fill(self.black)
         
         # Draw grid
-        border = 0.5
-        pygame.draw.rect(self.screen, self.grey, (self.top_left_x, self.top_left_y, self.width*self.cell_size, self.height*self.cell_size))
-        if True:
-            for i in range(self.width):
-                for j in range(self.height):
-                    val = self.board[j,i]
-                    col = self.red if val != 0 else self.black
-                    pygame.draw.rect(self.screen, col, pygame.Rect(150+self.cell_size*i+border,100+self.cell_size*j+border,self.cell_size-2*border,self.cell_size-2*border))
+        n1, n2 = np.arange(self.width) + 2, np.arange(self.height) + 2
+        grid = board[n2[:,None], n1[None,:]] # Pluck out the visual part
+        
+        background = (self.top_left_x - 1, 
+                      self.top_left_y - 1, 
+                      self.width*self.cell_size + 1, 
+                      self.height*self.cell_size + 1)
+        pygame.draw.rect(self.screen, self.grey, background)
+        
+        for i in range(self.width):
+            for j in range(self.height):
+                val = grid[j,i]
+                color = self.red if val != 0 else self.black
+                square = (self.top_left_x+self.cell_size*i,
+                          self.top_left_y+self.cell_size*j,
+                          self.cell_size-1, self.cell_size-1)
+                pygame.draw.rect(self.screen, color, square)
+        
+        # Draw piece
+        size = len(self.piece.shape[0])
+        for i in range(size):
+            for j in range(size):
+                if self.piece.shape[i, j] == 0:
+                    continue
+                square = (self.top_left_x + self.cell_size*(self.piece.x+i),
+                          self.top_left_y + self.cell_size*(self.piece.y+j),
+                          self.cell_size, self.cell_size)
+                pygame.draw.rect(self.screen, self.piece.color, square)
+            
                
 
 
-        text = self.scorefont.render("{:}".format(self.score), True, (0,0,0))
-        self.screen.blit(text, (790-text.get_width(), 10))
+        #text = self.scorefont.render("{:}".format(self.score), True, (0,0,0))
+        #self.screen.blit(text, (790-text.get_width(), 10))
 
         # Draw game over or you won       
-        #if self.game_over(self.y, self.board):
+        #if self.game_over(self.y, grid):
          #   msg = 'Game over!'
           #  col = self.badColor
            # text = self.bigfont.render(msg, True, col)
@@ -217,7 +246,6 @@ class Tetris():
         pygame.quit()
                  
     def init_render(self):
-        
         self.screen = pygame.display.set_mode([self.screenSize, self.screenSize])
         pygame.display.set_caption('Tetris')
         self.background = pygame.Surface(self.screen.get_size())
@@ -263,6 +291,8 @@ class Tetris():
        
     def new_game(self):
         board = np.zeros([22,10])
+        board = np.c_[np.ones(22), np.ones(22), board, np.ones(22)]
+        board = np.vstack((board, np.ones(13)))
         return board
     
     def get_state(self):

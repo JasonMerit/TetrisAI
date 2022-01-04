@@ -13,7 +13,7 @@ S = np.array([[[0,0,0],
                [0,0,1]]])
 x, y = 8, 10
 
-board = np.array([[0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+board = np.array([[1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -35,6 +35,7 @@ board = np.array([[0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                   [1, 1, 1, 1, 1, 1, 0, 0, 0, 0],
                   [1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
                   [1, 1, 1, 1, 1, 1, 1, 1, 1, 0]])
+size = len(board)
 
 def get_sub_board():
     size = len(S[0])
@@ -46,14 +47,29 @@ def get_sub_board():
 
 a = get_sub_board()
 print(a)
-b = a[:,0]
-print(b)
+if False:
+    a = np.c_[np.ones(size), np.ones(size), board, np.ones(size)]
+    b = np.vstack((a, np.ones(13)))
+    n1, n2 = np.arange(10) + 2, np.arange(20) + 2
+    board = b[n2[:,None], n1[None,:]]
+    print(a)
+    print(b)
+    print(board)
 
 # Jeg vil gerne kunne omskrive board til en tuppel af koordinator
-A = np.array([[1, 1, 0], [1, 0, 1], [0, 0, 1]])
-print(A)
+if False:
+    A = np.array([[1, 1, 0], [1, 0, 1], [0, 0, 1]])
+    print(A)
+    
+    indices = np.where(A == 0)
+    a, b = indices[0],indices[1]
+    coor = np.array(list(zip(a,b)))
+    print(coor)
 
-indices = np.where(A == 0)
-a, b = indices[0],indices[1]
-coor = np.array(list(zip(a,b)))
-print(coor)
+if False:
+    x, y = 2, 3
+    size = len(S[0])
+    for i in np.arange(size) + x:
+        for j in np.arange(size) + y:
+            print(i,j)
+    
