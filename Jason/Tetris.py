@@ -130,14 +130,6 @@ class Tetris():
     offset = 100
 
     # Colors
-    yellow = (236, 226, 157)
-    red = (180, 82, 80)
-    cyan = (105, 194, 212)
-    blue = (75, 129, 203,)
-    pink = (205, 138, 206)
-    orange = (211, 160, 103)
-    green = (75, 129, 203)
-    badColor = (192, 30, 30)
     black = (34, 34, 34)
     grey = (184, 184, 184)
 
@@ -148,6 +140,8 @@ class Tetris():
         self.board = self.new_board()
         self.piece = Piece()
         self.next_piece = Piece()
+        self.shift_piece = None
+        self.shifted = False
 
     def step(self, action):
         # Move piece and undo if invalid move
@@ -180,6 +174,19 @@ class Tetris():
             self.new_piece()
         elif action == "change":
             self.piece.change()
+        elif action == "shift" and not self.shifted:
+            self.shifted = True
+            if self.shift_piece:
+                temp = self.piece
+                self.piece = self.shift_piece
+                
+                self.shift_piece = temp
+                #self.shift_piece.x, self.shift_piece.y = self.piece.x, self.piece.y
+            else:
+                self.shift_piece = self.piece
+                self.piece = Piece()
+            
+            
         # print(self.piece.x, self.piece.y)
 
     def _valid_position(self):
@@ -222,7 +229,7 @@ class Tetris():
         for c in coor:
             self.board[c] = 1
         
-        
+        self.shifted = False
 
         # Get new piece
         self.piece = self.next_piece
@@ -290,6 +297,31 @@ class Tetris():
                           self.top_left_y + self.cell_size * (self.piece.y + i - 2),
                           self.cell_size, self.cell_size)
                 pygame.draw.rect(self.screen, self.piece.color, square)
+        
+        
+        # Draw next piece
+        size = len(self.next_piece.shape[0])
+        for i in range(size):
+            for j in range(size):
+                if self.next_piece.shape[i, j] == 0:
+                    continue
+                square = (470 + self.cell_size * j,
+                          100 + self.cell_size * i,
+                          self.cell_size, self.cell_size)
+                pygame.draw.rect(self.screen, self.next_piece.color, square)
+        
+        # Draw shift_piece
+        if self.shift_piece:
+            size = len(self.shift_piece.shape[0])
+            for i in range(size):
+                for j in range(size):
+                    if self.shift_piece.shape[i, j] == 0:
+                        continue
+                    square = (50 + self.cell_size * j,
+                              100 + self.cell_size * i,
+                              self.cell_size, self.cell_size)
+                    pygame.draw.rect(self.screen, self.shift_piece.color, square)
+        
 
         # text = self.scorefont.render("{:}".format(self.score), True, (0,0,0))
         # self.screen.blit(text, (790-text.get_width(), 10))
@@ -300,6 +332,8 @@ class Tetris():
     def reset(self):
         self.board = self.new_board()
         self.piece = Piece()
+        self.next_piece = Piece()
+        self.shift_piece = None
 
     def close(self):
         pygame.quit()
@@ -342,22 +376,27 @@ render = True
 done = False
 drop_time = 0
 drop_speed = 0.06
+dos = 0
+dos_lag = 0
 
 clock = pygame.time.Clock()
 
 while run:
     clock.tick(40)
     drop_time += clock.get_rawtime()  # Time since last iteration (ms)
+    dos += clock.get_rawtime()
+    dos_lag += clock.get_rawtime()
 
     if drop_time / 1000 > drop_speed:  # Drop piece
         drop_time = 0
         env.drop()
 
-        # Process game events
+    # Process game events
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             run = False
         if event.type == pygame.KEYDOWN:
+            dos_lag = 0
             if event.key in [pygame.K_ESCAPE, pygame.K_q]:
                 run = False
             if event.key == pygame.K_RIGHT:
@@ -376,6 +415,22 @@ while run:
                 action, action_taken = "drop", True
             elif event.key == pygame.K_e:
                 action, action_taken = "change", True
+            elif event.key == pygame.K_LSHIFT:
+                action, action_taken = "shift", True
+            elif event.key == pygame.K_r:
+                env.reset()
+    if dos_lag / 1000 > 0.05 and dos / 1000 > 0.02:
+        dos = 0
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_RIGHT]:
+            action, action_taken = "right", True
+        elif keys[pygame.K_LEFT]:
+            action, action_taken = "left", True
+        if keys[pygame.K_DOWN]:
+            action, action_taken = "down", True
+        if keys[pygame.K_ESCAPE]:
+            pygame.quit()
+            break
 
     # AI controller
     if runai:
