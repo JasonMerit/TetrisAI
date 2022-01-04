@@ -6,6 +6,11 @@ import pygame
 import numpy as np
 import random
 
+dic = {"Z":1, "I":2, "J":5, "T":7, "L":9, "S":14, "O":19 }
+random.seed(dic["O"])
+
+
+
 
 class Piece():
     """
@@ -89,7 +94,7 @@ class Piece():
         :param teromino: shape of piece (int)
         :return: None
         """
-        self.x, self.y = 4, 0
+        self.x, self.y = 5, 0 # SPAWN POSITION
         self.rotation = 0
         self.tetromino = tetromino
         self.shape = self.shapes[tetromino][self.rotation]
@@ -135,14 +140,16 @@ class Tetris():
 
     def step(self, action):
         # Move piece and undo if invalid move
-        if action == "left" and self.piece.x > 0:
+        
+        if action == "left":
             self.piece.x -= 1
             if not self._valid_position():
                 self.piece.x += 1
-        elif action == "right" and self.piece.x < 13:
+        elif action == "right" and self.piece.x < 9:
             self.piece.x += 1
             if not self._valid_position():
                 self.piece.x -= 1
+        #print(self.piece.x, self.piece.y)
     
     def _valid_position(self):
         """
@@ -152,20 +159,16 @@ class Tetris():
         size = len(self.piece.shape)
         
         # Get part of board that piece inhabits
-        sx = max(size + self.piece.x - 10, 0) # Determine if sub-board exceeds board
-        sy = max(size + self.piece.y - 22, 0) # 0 if it doesn't
-        n1, n2 = np.arange(size - sx) + self.piece.x, np.arange(size-sy) + self.piece.y
-        sub_board = board[n2[:,None], n1[None,:]]
-        
-        # Check for collision by summing 
-        
-        
-        # Get lines of board that piece inhabits
+        sx = max(size + self.piece.x - 13, 0) # Determine if sub-board exceeds board
+        sy = max(size + self.piece.y - 23, 0) # 0 if it doesn't
         n1, n2 = np.arange(size) + self.piece.x, np.arange(size) + self.piece.y
         sub_board = board[n2[:,None], n1[None,:]]
+        print(sub_board)
+        # Check for collision by summing and checking for 2
+        collision_matrix = self.piece.shape + sub_board
         
-        
-        
+        if np.any(collision_matrix == 2):
+            return False
         return True
     
     
@@ -217,8 +220,8 @@ class Tetris():
             for j in range(size):
                 if self.piece.shape[i, j] == 0:
                     continue
-                square = (self.top_left_x + self.cell_size*(self.piece.x+i),
-                          self.top_left_y + self.cell_size*(self.piece.y+j),
+                square = (self.top_left_x + self.cell_size*(self.piece.x+j-2),
+                          self.top_left_y + self.cell_size*(self.piece.y+i-1),
                           self.cell_size, self.cell_size)
                 pygame.draw.rect(self.screen, self.piece.color, square)
             
@@ -332,8 +335,10 @@ while run:
                 action, action_taken = "left", True
             if event.key == pygame.K_UP:
                 action, action_taken = "up", True
-            if event.key == pygame.K_DOWN or event.key == pygame.K_SPACE:
+            if event.key == pygame.K_DOWN:
                 action, action_taken = "down", True
+            elif event.key == pygame.K_SPACE:
+                action, action_taken = "drop", True
     
     # AI controller
     if runai:
