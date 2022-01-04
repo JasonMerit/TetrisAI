@@ -218,8 +218,8 @@ def clear_rows(grid, locked):
     for i in range(len(grid)-1, -1, -1): # Loop backwards
         row = grid[i]
         if black not in row: # Meaning full
-            inc += 1
-            ind = i # number of deleted rows
+            inc += 1 # number of deleted rows
+            ind = i 
             for j in range(len(row)):
                 try:
                     del locked[(j,i)] # Delete each column element

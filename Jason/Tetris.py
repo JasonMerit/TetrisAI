@@ -157,7 +157,8 @@ class Tetris():
         n1, n2 = np.arange(size - sx) + self.piece.x, np.arange(size-sy) + self.piece.y
         sub_board = board[n2[:,None], n1[None,:]]
         
-        #
+        # Check for collision by summing 
+        
         
         # Get lines of board that piece inhabits
         n1, n2 = np.arange(size) + self.piece.x, np.arange(size) + self.piece.y

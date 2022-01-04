@@ -47,13 +47,9 @@ def get_sub_board():
 
 a = get_sub_board()
 print(a)
-if False:
+if True:
     a = np.c_[np.ones(size), np.ones(size), board, np.ones(size)]
-    b = np.vstack((a, np.ones(13)))
-    n1, n2 = np.arange(10) + 2, np.arange(20) + 2
-    board = b[n2[:,None], n1[None,:]]
-    print(a)
-    print(b)
+    board = np.vstack((a, np.ones(13)))
     print(board)
 
 # Jeg vil gerne kunne omskrive board til en tuppel af koordinator
