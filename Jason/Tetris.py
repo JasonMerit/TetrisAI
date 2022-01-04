@@ -7,7 +7,7 @@ import numpy as np
 import random
 
 dic = {"Z":1, "I":2, "J":5, "T":7, "L":9, "S":14, "O":19 }
-random.seed(dic["O"])
+#random.seed(dic["L"])
 
 
 
@@ -61,8 +61,8 @@ class Piece():
                    [1,1,1],
                    [0,0,1]],
                   [[0,1,0],
-                   [1,1,0],
-                   [0,1,0]],
+                   [0,1,0],
+                   [1,1,0]],
                   [[1,0,0],
                    [1,1,1],
                    [0,0,0]],
@@ -85,10 +85,12 @@ class Piece():
                    [0,0,1,0]]])
 
 
-    shapes = [S, Z, T, L, J, O, I]
-    shape_colors = [(0, 255, 0), (255, 0, 0), (0, 255, 255), (255, 255, 0), (255, 165, 0), (0, 0, 255), (128, 0, 128)]
+    shapes = [S, Z, T, L, 
+              J, O, I]
+    shape_colors = [(0, 255, 0), (255, 0, 0), (128, 0, 128), (255, 165, 0),
+                    (0, 0, 255), (255, 255, 0), (0, 255, 255)]
     
-    def __init__(self, tetromino):
+    def __init__(self):
         """
         Initialize the object positioned at the top of board
         :param teromino: shape of piece (int)
@@ -96,13 +98,22 @@ class Piece():
         """
         self.x, self.y = 5, 0 # SPAWN POSITION
         self.rotation = 0
-        self.tetromino = tetromino
-        self.shape = self.shapes[tetromino][self.rotation]
-        self.color = self.shape_colors[tetromino]
+        self.tetromino = random.randint(0,6)
+        self.shape = self.shapes[self.tetromino][self.rotation]
+        self.color = self.shape_colors[self.tetromino]
     
-    def rotate(self):
+    def rotate(self, clockwise = True):
+        dir = 1 if clockwise else -1
         num_rotations = len(self.shapes[self.tetromino])
-        self.rotation = (self.rotation + 1) % num_rotations
+        self.rotation = (self.rotation + dir) % num_rotations
+        self.shape = self.shapes[self.tetromino][self.rotation]
+    
+    def change(self):
+        num_pieces = len(self.shapes)
+        self.tetromino = (self.tetromino + 1) % num_pieces
+        self.rotation = 0
+        self.shape = self.shapes[self.tetromino][self.rotation]
+        self.color = self.shape_colors[self.tetromino]
                 
 
 class Tetris():    
@@ -135,9 +146,9 @@ class Tetris():
         self.reward = 0
         self.score = 0
         self.board = self.new_game()
-        self.piece = Piece(random.randint(0,6))
-        self.next_piece = Piece(random.randint(0,6))
-
+        self.piece = Piece()
+        self.next_piece = Piece()
+    
     def step(self, action):
         # Move piece and undo if invalid move
         
@@ -145,10 +156,27 @@ class Tetris():
             self.piece.x -= 1
             if not self._valid_position():
                 self.piece.x += 1
-        elif action == "right" and self.piece.x < 9:
+        elif action == "right":
             self.piece.x += 1
             if not self._valid_position():
                 self.piece.x -= 1
+        elif action == "up":
+            self.piece.rotate()
+            if not self._valid_position():
+                self.piece.rotate(False)
+        elif action == "down":
+            if False:
+                self.piece.y += 1
+                if not self._valid_position():
+                    self.piece.y -= 1
+                    self.new_piece()
+                
+            if True:
+                self.piece.rotate(False)
+                if not self._valid_position():
+                    self.piece.rotate(True)
+        elif action == "action":
+            self.piece.change()
         #print(self.piece.x, self.piece.y)
     
     def _valid_position(self):
@@ -159,11 +187,11 @@ class Tetris():
         size = len(self.piece.shape)
         
         # Get part of board that piece inhabits
-        sx = max(size + self.piece.x - 13, 0) # Determine if sub-board exceeds board
-        sy = max(size + self.piece.y - 23, 0) # 0 if it doesn't
+        #sx = max(size + self.piece.x - 13, 0) # Determine if sub-board exceeds board
+        #sy = max(size + self.piece.y - 23, 0) # 0 if it doesn't
         n1, n2 = np.arange(size) + self.piece.x, np.arange(size) + self.piece.y
         sub_board = board[n2[:,None], n1[None,:]]
-        print(sub_board)
+        
         # Check for collision by summing and checking for 2
         collision_matrix = self.piece.shape + sub_board
         
@@ -172,21 +200,29 @@ class Tetris():
         return True
     
     
-    def tick(self):        
-        # Let piece fall 
-        #if not self.game_over(self.y, self.board):
-         #   if y == 23 or self.board[y+1,x] != 0:
-                # Hit floor or other piece
-                # Set PLACED to true
-                pass
-          #  else:
-           #     ny = y + 1 #Drop down
+    def drop(self):        
+        # Let piece drop 
+        self.piece.y += 1
+        if not self._valid_position():
+            self.piece.y -= 1
+            self.new_piece()
+    
+    def new_piece(self):
+        # Register current piece into board and create new piece
         
-        #self.y = ny
+        # Find coordinates the current piece inhabits
+        indices = np.where(self.piece.shape == 1)
+        a, b = indices[0],indices[1]
+        a, b = a + self.piece.y, b + self.piece.x
+        coor = zip(a,b)    
         
-        # return observation, reward, done
-        #done = self.game_over(self.y, self.board) 
-        #return (self.x, self.y, done)
+        # Change the board accordingly
+        for c in coor:
+            board[c] = 1        
+        
+        # Get new piece
+        self.piece = self.next_piece
+        self.next_piece = Piece()
         
     def render(self):
         if not self.rendering:
@@ -208,7 +244,7 @@ class Tetris():
         for i in range(self.width):
             for j in range(self.height):
                 val = grid[j,i]
-                color = self.red if val != 0 else self.black
+                color = self.grey if val != 0 else self.black
                 square = (self.top_left_x+self.cell_size*i,
                           self.top_left_y+self.cell_size*j,
                           self.cell_size-1, self.cell_size-1)
@@ -220,8 +256,8 @@ class Tetris():
             for j in range(size):
                 if self.piece.shape[i, j] == 0:
                     continue
-                square = (self.top_left_x + self.cell_size*(self.piece.x+j-2),
-                          self.top_left_y + self.cell_size*(self.piece.y+i-1),
+                square = (self.top_left_x + self.cell_size*(self.piece.x+j-2), # POSITION HERE
+                          self.top_left_y + self.cell_size*(self.piece.y+i-2),
                           self.cell_size, self.cell_size)
                 pygame.draw.rect(self.screen, self.piece.color, square)
             
@@ -265,38 +301,13 @@ class Tetris():
             #return True
         
         return False
-        
-    def move(self, x, y, board, score, action):
-        nx, ny = x, y
-        
-        if action=='left':
-            if nx>0:
-                nx = x - 1
-        elif action=='right':
-            if nx<9:
-                nx = x + 1
-        elif action=='down':
-            if y != 23:
-                if board[y+1,x] == 0:
-                    ny = y + 1 #Drop down
-        elif action=="A":
-            nx, ny = self.rotate(True)
-        elif action=="B":
-            nx, ny = self.rotate(False)
-        else:
-            pass
-
-        # Update position
-        board[y, x] = 0
-        board[ny, nx] = 1
-        self.x, self.y = nx, ny
-                     
-        return (nx, ny, board, score)
        
     def new_game(self):
         board = np.zeros([22,10])
-        board = np.c_[np.ones(22), np.ones(22), board, np.ones(22)]
-        board = np.vstack((board, np.ones(13)))
+        wall = np.ones([22, 2])
+        floor = np.ones([2, 14])
+        board = np.c_[wall, board, wall]
+        board = np.vstack((board, floor))
         return board
     
     def get_state(self):
@@ -316,11 +327,18 @@ slow = True
 runai = False
 render = True
 done = False
+drop_time = 0
+drop_speed = 0.06
 
 clock = pygame.time.Clock()
 
 while run:
     clock.tick(40)
+    drop_time  += clock.get_rawtime() # Time since last iteration (ms)
+    
+    if drop_time / 1000 > drop_speed: # Drop piece
+        drop_time = 0
+        env.drop()        
         
     # Process game events
     for event in pygame.event.get():
@@ -338,7 +356,7 @@ while run:
             if event.key == pygame.K_DOWN:
                 action, action_taken = "down", True
             elif event.key == pygame.K_SPACE:
-                action, action_taken = "drop", True
+                action, action_taken = "action", True
     
     # AI controller
     if runai:
@@ -349,9 +367,6 @@ while run:
         if action_taken:
             env.step(action)
             action_taken = False
-            
-    # Process game tick
-    env.tick()
             
     if render:
         env.render()
