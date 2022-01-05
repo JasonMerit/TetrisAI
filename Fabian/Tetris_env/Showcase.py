@@ -13,11 +13,12 @@ env = DummyVecEnv([lambda:env])
 state = env.reset()
 CHECKPOINT_DIR = './train/'
 
-model = PPO.load(CHECKPOINT_DIR + 'best_PPO_model_100000.zip')
+model = PPO.load(CHECKPOINT_DIR + 'best_PPO_model_2000.zip')
 
 while True:
     action = model.predict(state)
-    state, reward, done, _ = env.step(action)
+    state, reward, done, score = env.step(action)
+    print(reward)
     env.render()
     if done:
         env.reset()

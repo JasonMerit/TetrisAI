@@ -3,9 +3,6 @@ import numpy as np
 import random
 import gym
 from gym import spaces
-from stable_baselines3 import PPO
-from stable_baselines3.common.vec_env import DummyVecEnv
-from stable_baselines3.common.env_checker import check_env
 
 dic = {"Z": 1, "I": 2, "J": 5, "T": 7, "L": 9, "S": 14, "O": 19}
 
@@ -127,14 +124,6 @@ class Piece:
         self.color = self.shape_colors[self.tetromino]
 
 
-def new_board():
-    board = np.zeros([22, 10])
-    wall = np.ones([22, 2])
-    floor = np.ones([2, 15])
-    board = np.c_[np.ones(22), wall, board, wall]
-    board = np.vstack((board, floor))
-    return board
-
 class Tetris(gym.Env):
     """
     Tetris class acting as enviroment. 
@@ -160,7 +149,7 @@ class Tetris(gym.Env):
     def __init__(self):
         pygame.init()
         super(Tetris, self).__init__()
-        self.action_space = spaces.Discrete(6)
+        self.action_space = spaces.Discrete(7)
         # Observation space contains the board, and an extra row representing the next piece
         self.observation_space = spaces.Box(low=0, high=1, shape=(207, 1), dtype=int)
         self.current_score = 0
@@ -168,7 +157,7 @@ class Tetris(gym.Env):
         self.current_lines = 0
         self.current_height = 0
         self.number_of_lines = 0
-        self.board = new_board()
+        self.board = self.new_board()
         self.piece = Piece()
         self.next_piece = Piece()
         self.shifted = False
@@ -179,7 +168,7 @@ class Tetris(gym.Env):
 
     def step(self, action):
         """
-        Applies the given action in the environment.
+        Applies the given action in the environment, and drops the piece one spot afterwards
         It works by taking the action and redoing if the piece ends up
         in an invalid configuration.
         :param action: Action given to environment (String)
@@ -197,8 +186,10 @@ class Tetris(gym.Env):
                 self.piece.x -= 1
         elif action == 3:
             self.piece.y += 1   # Move down
+            self.score += 1
             if not self._valid_position():
                 self.piece.y -= 1
+                self.score -=1
                 self.new_piece()
         elif action == 4:
             self.piece.rotate()     # Rotate clockwise
@@ -208,10 +199,24 @@ class Tetris(gym.Env):
             self.piece.rotate(False)    # Rotate counter-clockwise
             if not self._valid_position():
                 self.piece.rotate(True)
+        elif action == 6:
+            while self._valid_position():   # Full drop
+                self.piece.y += 1
+                self.score += 1
+            self.piece.y -= 1
+            self.score -= 1
 
+        self.drop()
         reward = self.get_reward()
-
         return self.get_state(), reward, self.game_over(), {}
+
+    def new_board(self):
+        board = np.zeros([22, 10])
+        wall = np.ones([22, 2])
+        floor = np.ones([2, 15])
+        board = np.c_[np.ones(22), wall, board, wall]
+        board = np.vstack((board, floor))
+        return board
 
     def board_height(self):
         """Return the height of the board."""
@@ -242,17 +247,18 @@ class Tetris(gym.Env):
         if penalty > 0:
             # punish the ai for having a bumpy board only when increasing its height
             # until I find a smarter way to calculate bumpiness dependent on placing a piece
-            reward -= self.get_bumpiness()
+            reward -= self.get_bumpiness() * 0.1
             reward -= penalty
         # big penalty for loosing
         if self.game_over():
             reward -= 20
         else:
-            reward += 0.01
+            reward += 1
+
         # update the locals
-        self._current_score = self.score
-        self._current_lines = self.number_of_lines
-        self._current_height = self.board_height()
+        self.current_score = self.score
+        self.current_lines = self.number_of_lines
+        self.current_height = self.board_height()
 
         return reward
 

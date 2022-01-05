@@ -7,6 +7,7 @@ from stable_baselines3.common.vec_env import DummyVecEnv, VecFrameStack
 from stable_baselines3.common.env_checker import check_env
 import numpy as np
 
+
 class TrainLogging(BaseCallback):
     def __init__(self, check_freq, save_path, verbose=1):
         super(TrainLogging, self).__init__(verbose)
@@ -28,11 +29,14 @@ class TrainLogging(BaseCallback):
 CHECKPOINT_DIR = './train/'
 LOG_DIR = './logs/'
 
-callback = TrainLogging(check_freq=50000, save_path=CHECKPOINT_DIR)
+callback = TrainLogging(check_freq=500000, save_path=CHECKPOINT_DIR)
 env = Tetris()
 check_env(env)
 env = DummyVecEnv([lambda:env])
+env.reset()
 
 model = PPO(policy='MlpPolicy', env=env, tensorboard_log=LOG_DIR)
+# model = PPO.load(CHECKPOINT_DIR + 'best_PPO_model_100000.zip')
 
-model.learn(total_timesteps=2000000, callback=callback)
+
+model.learn(total_timesteps=20000000, callback=callback)
