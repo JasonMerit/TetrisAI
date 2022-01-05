@@ -153,11 +153,12 @@ class Tetris(gym.Env):
     black = (34, 34, 34)
     grey = (184, 184, 184)
 
-    def __init__(self, movement):
+    def __init__(self):
         pygame.init()
-        self.action_space = spaces.Discrete(len(movement))
+        super(Tetris, self).__init__()
+        self.action_space = spaces.Discrete(6)
         # Observation space contains the board, and an extra row representing the next piece
-        self.observation_space = spaces.Box(low=0, high=1, shape=(210, 1), dtype=int)
+        self.observation_space = spaces.Box(low=0, high=1, shape=(207, 1), dtype=int)
         self.current_score = 0
         self.score = 0
         self.current_lines = 0
@@ -169,32 +170,29 @@ class Tetris(gym.Env):
 
     def step(self, action):
         # Move piece and undo if invalid move
-        if action == 1:
-            self.piece.x -= 1
+        if action == 0:
+            pass
+        elif action == 1:
+            self.piece.x -= 1   # Move left
             if not self._valid_position():
                 self.piece.x += 1
         elif action == 2:
-            self.piece.x += 1
+            self.piece.x += 1   # Move right
             if not self._valid_position():
                 self.piece.x -= 1
         elif action == 3:
-            self.piece.y += 1
+            self.piece.y += 1   # Move down
             if not self._valid_position():
                 self.piece.y -= 1
                 self.new_piece()
         elif action == 4:
-            self.piece.rotate()
+            self.piece.rotate()     # Rotate clockwise
             if not self._valid_position():
                 self.piece.rotate(False)
         elif action == 5:
-            self.piece.rotate(False)
+            self.piece.rotate(False)    # Rotate counter-clockwise
             if not self._valid_position():
                 self.piece.rotate(True)
-        elif action == 6:
-            while self._valid_position():
-                self.piece.y += 1
-            self.piece.y -= 1
-            self.new_piece()
 
         reward = self.get_reward()
 
@@ -378,15 +376,15 @@ class Tetris(gym.Env):
         self.scorefont = pygame.font.Font(None, 30)
 
     def get_state(self):
-        next_piece_position = np.zeros(10)
+        next_piece_position = np.zeros(7)
         next_piece_position[self.next_piece.tetromino] = 1
         observation = np.concatenate((self.board[2:22, 3:13].flat, next_piece_position.flat))
-        return observation.reshape(210, 1)
+        return observation.reshape(207, 1)
 
 
 # Initialize the environment
 movement_list = [0, 1, 2, 3, 4, 5, 6]
-env = Tetris(movement_list)
+env = Tetris()
 env.reset()
 
 # Definitions and default settings

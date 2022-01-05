@@ -6,8 +6,6 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import DummyVecEnv, VecFrameStack
 from stable_baselines3.common.env_checker import check_env
 import numpy as np
-from nes_py.wrappers import JoypadSpace
-
 
 class TrainLogging(BaseCallback):
     def __init__(self, check_freq, save_path, verbose=1):
@@ -30,12 +28,11 @@ class TrainLogging(BaseCallback):
 CHECKPOINT_DIR = './train/'
 LOG_DIR = './logs/'
 
-callback = TrainLogging(check_freq=1000, save_path=CHECKPOINT_DIR)
-movement_list = [0, 1, 2, 3, 4, 5, 6]
-env = Tetris(movement_list)
+callback = TrainLogging(check_freq=50000, save_path=CHECKPOINT_DIR)
+env = Tetris()
 check_env(env)
 env = DummyVecEnv([lambda:env])
 
 model = PPO(policy='MlpPolicy', env=env, tensorboard_log=LOG_DIR)
 
-model.learn(total_timesteps=20000)
+model.learn(total_timesteps=2000000, callback=callback)
