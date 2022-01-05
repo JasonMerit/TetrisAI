@@ -156,7 +156,7 @@ class Tetris():
         pygame.init()
         self.reward = 0
         self.score = 0
-        self.board = self.new_board()
+        self.board = new_board()
         self.piece = Piece()
         self.next_piece = Piece()
         self.shift_piece = None
