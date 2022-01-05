@@ -1,6 +1,11 @@
 import pygame
 import numpy as np
 import random
+import gym
+from gym import spaces
+from stable_baselines3 import PPO
+from stable_baselines3.common.vec_env import DummyVecEnv
+from stable_baselines3.common.env_checker import check_env
 
 dic = {"Z": 1, "I": 2, "J": 5, "T": 7, "L": 9, "S": 14, "O": 19}
 
@@ -8,7 +13,7 @@ dic = {"Z": 1, "I": 2, "J": 5, "T": 7, "L": 9, "S": 14, "O": 19}
 # random.seed(dic["I"])
 
 
-class Piece():
+class Piece:
     """
     Piece class representing a tetromino.
     """
@@ -113,7 +118,17 @@ class Piece():
         self.color = self.shape_colors[self.tetromino]
 
 
-class Tetris():
+def new_board():
+    board = np.zeros([22, 10])
+    wall = np.ones([22, 2])
+    floor = np.ones([2, 15])
+    board = np.c_[np.ones(22), wall, board, wall]
+    board = np.vstack((board, floor))
+    return board
+
+
+class Tetris(gym.Env):
+    metadata = {'render.modes': ['human']}
     # Rendering?
     rendering = False
 
@@ -138,46 +153,95 @@ class Tetris():
     black = (34, 34, 34)
     grey = (184, 184, 184)
 
-    def __init__(self, state=None):
+    def __init__(self, movement):
         pygame.init()
-        self.reward = 0
+        self.action_space = spaces.Discrete(len(movement))
+        # Observation space contains the board, and an extra row representing the next piece
+        self.observation_space = spaces.Box(low=0, high=1, shape=(210, 1), dtype=int)
+        self.current_score = 0
         self.score = 0
-        self.board = self.new_board()
+        self.current_lines = 0
+        self.current_height = 0
+        self.number_of_lines = 0
+        self.board = new_board()
         self.piece = Piece()
         self.next_piece = Piece()
 
     def step(self, action):
         # Move piece and undo if invalid move
-
-        if action == "left":
+        if action == 1:
             self.piece.x -= 1
             if not self._valid_position():
                 self.piece.x += 1
-        elif action == "right":
+        elif action == 2:
             self.piece.x += 1
             if not self._valid_position():
                 self.piece.x -= 1
-        elif action == "down":
+        elif action == 3:
             self.piece.y += 1
             if not self._valid_position():
                 self.piece.y -= 1
                 self.new_piece()
-        elif action == "rotate":
+        elif action == 4:
             self.piece.rotate()
             if not self._valid_position():
                 self.piece.rotate(False)
-        elif action == "lotate":
+        elif action == 5:
             self.piece.rotate(False)
             if not self._valid_position():
                 self.piece.rotate(True)
-        elif action == "drop":
+        elif action == 6:
             while self._valid_position():
                 self.piece.y += 1
             self.piece.y -= 1
             self.new_piece()
-        elif action == "change":
-            self.piece.change()
-        # print(self.piece.x, self.piece.y)
+
+        reward = self.get_reward()
+
+        return self.get_state(), reward, self.game_over(), {}
+
+    def board_height(self):
+        """Return the height of the board."""
+        board = self.board[2:22, 3:13]
+        # look for any piece in any row
+        board = board.any(axis=1)
+        # take to sum to determine the height of the board
+        return board.sum()
+
+    def get_bumpiness(self):
+        board = self.board[2:22, 3:13]
+        # bumpiness is the measure of the difference in heights between neighbouring columns
+        bumpiness = 0
+        for i in range(9):
+            bumpiness += abs(board[:, i].argmax() - board[:, i + 1].argmax())
+
+        return bumpiness
+
+    def get_reward(self):
+        reward = 0
+        # reward the change in score
+        reward += self.score - self.current_score
+        # greatly reward a line being cleared
+        reward += (self.number_of_lines - self.current_lines) * 100
+        # penalize a change in height
+        penalty = self.board_height() - self.current_height
+        # only apply the penalty for an increase in height (not a decrease)
+        if penalty > 0:
+            # punish the ai for having a bumpy board only when increasing its height
+            # until I find a smarter way to calculate bumpiness dependent on placing a piece
+            reward -= self.get_bumpiness()
+            reward -= penalty
+        # big penalty for loosing
+        if self.game_over():
+            reward -= 20
+        else:
+            reward += 0.01
+        # update the locals
+        self._current_score = self.score
+        self._current_lines = self.number_of_lines
+        self._current_height = self.board_height()
+
+        return reward
 
     def _valid_position(self):
         """
@@ -197,7 +261,7 @@ class Tetris():
         return True
 
     def drop(self):
-        # Let piece drop 
+        # Let piece drop
         self.piece.y += 1
         if not self._valid_position():
             self.piece.y -= 1
@@ -205,7 +269,7 @@ class Tetris():
 
     def new_piece(self):
         """
-        Registers current piece into board, creates new piece and 
+        Registers current piece into board, creates new piece and
         determines if game over
         """
 
@@ -213,10 +277,10 @@ class Tetris():
         indices = np.where(self.piece.shape == 1)
         a, b = indices[0], indices[1]
         a, b = a + self.piece.y, b + self.piece.x
-        coor = zip(a, b)
+        coords = zip(a, b)
 
         # Change the board accordingly
-        for c in coor:
+        for c in coords:
             self.board[c] = 1
 
         # Get new piece
@@ -224,9 +288,14 @@ class Tetris():
         self.next_piece = Piece()
         self.clear_lines()
 
+        if self.game_over():
+            self.reset()
+
+    def game_over(self):
         # Game over if piece out of screen
         if np.any(self.board[2][3:13] == 1):
-            self.reset()
+            return True
+        return False
 
     def clear_lines(self):
         """
@@ -250,7 +319,7 @@ class Tetris():
         # Add final result to board
         self.board[2:22, 3:13] = grid
 
-    def render(self):
+    def render(self, mode="human"):
         if not self.rendering:
             self.init_render()
 
@@ -285,15 +354,14 @@ class Tetris():
                           self.cell_size, self.cell_size)
                 pygame.draw.rect(self.screen, self.piece.color, square)
 
-        # text = self.scorefont.render("{:}".format(self.score), True, (0,0,0))
-        # self.screen.blit(text, (790-text.get_width(), 10))
-
         # Display
         pygame.display.flip()
 
     def reset(self):
-        self.board = self.new_board()
+        self.board = new_board()
         self.piece = Piece()
+
+        return self.get_state()
 
     def close(self):
         pygame.quit()
@@ -309,26 +377,20 @@ class Tetris():
         self.bigfont = pygame.font.Font(None, 80)
         self.scorefont = pygame.font.Font(None, 30)
 
-    def new_board(self):
-        board = np.zeros([22, 10])
-        wall = np.ones([22, 2])
-        floor = np.ones([2, 15])
-        board = np.c_[np.ones(22), wall, board, wall]
-        board = np.vstack((board, floor))
-        return board
-
     def get_state(self):
-        return self.board
+        next_piece_position = np.zeros(10)
+        next_piece_position[self.next_piece.tetromino] = 1
+        observation = np.concatenate((self.board[2:22, 3:13].flat, next_piece_position.flat))
+        return observation.reshape(210, 1)
 
 
 # Initialize the environment
-env = Tetris()
+movement_list = [0, 1, 2, 3, 4, 5, 6]
+env = Tetris(movement_list)
 env.reset()
-board = env.get_state()
 
 # Definitions and default settings
-actions = ['left', 'right', 'up', 'down']
-run = True
+run = False
 action_taken = False
 slow = True
 runai = False
@@ -355,21 +417,21 @@ while run:
             if event.key in [pygame.K_ESCAPE, pygame.K_q]:
                 run = False
             if event.key == pygame.K_RIGHT:
-                action, action_taken = "right", True
+                action, action_taken = 1, True
             if event.key == pygame.K_LEFT:
-                action, action_taken = "left", True
+                action, action_taken = 2, True
             if event.key == pygame.K_UP:
-                action, action_taken = "rotate", True
+                action, action_taken = 3, True
             if event.key == pygame.K_DOWN:
-                action, action_taken = "down", True
+                action, action_taken = 4, True
             if event.key == pygame.K_z:
-                action, action_taken = "lotate", True
+                action, action_taken = 5, True
             elif event.key == pygame.K_x:
-                action, action_taken = "rotate", True
+                action, action_taken = 6, True
             elif event.key == pygame.K_SPACE:
-                action, action_taken = "drop", True
+                action, action_taken = 7, True
             elif event.key == pygame.K_e:
-                action, action_taken = "change", True
+                action, action_taken = 8, True
 
     # AI controller
     if runai:
@@ -380,6 +442,7 @@ while run:
         if action_taken:
             env.step(action)
             action_taken = False
+            print(env.get_state())
 
     if render:
         env.render()
