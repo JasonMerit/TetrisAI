@@ -105,12 +105,21 @@ class Piece:
         self.x = 7 if self.tetromino < 5 else 6
 
     def rotate(self, clockwise=True):
+        """
+        Rotates piece in either direction
+        :param clockwise: Rotates clockwise if true else counter-clockwise (bool)
+        :return: None
+        """
         dir = 1 if clockwise else -1
         num_rotations = len(self.shapes[self.tetromino])
         self.rotation = (self.rotation + dir) % num_rotations
         self.shape = self.shapes[self.tetromino][self.rotation]
 
     def change(self):
+        """
+        Change current piece to another piece (for debugging)
+        :return: None
+        """
         num_pieces = len(self.shapes)
         self.tetromino = (self.tetromino + 1) % num_pieces
         self.rotation = 0
@@ -126,12 +135,15 @@ def new_board():
     board = np.vstack((board, floor))
     return board
 
-
 class Tetris(gym.Env):
+    """
+    Tetris class acting as enviroment. 
+    The game data is represented using a matrix representing the board,
+    and piece objects. The board is extended out of view for easy collision
+    detection, as such occationally the a submatrix is constructed. 
+    """
     metadata = {'render.modes': ['human']}
-    # Rendering?
-    rendering = False
-
+    
     # Rendering Dimensions
     screen_size = 600
     cell_size = 25
@@ -142,14 +154,6 @@ class Tetris(gym.Env):
     offset = 100
 
     # Colors
-    yellow = (236, 226, 157)
-    red = (180, 82, 80)
-    cyan = (105, 194, 212)
-    blue = (75, 129, 203,)
-    pink = (205, 138, 206)
-    orange = (211, 160, 103)
-    green = (75, 129, 203)
-    badColor = (192, 30, 30)
     black = (34, 34, 34)
     grey = (184, 184, 184)
 
@@ -167,9 +171,20 @@ class Tetris(gym.Env):
         self.board = new_board()
         self.piece = Piece()
         self.next_piece = Piece()
+        self.shifted = False
+        
+        self.screen = pygame.display.set_mode([self.screen_size, self.screen_size])
+        pygame.display.set_caption('Tetris')
+        self.background = pygame.Surface(self.screen.get_size())
 
     def step(self, action):
-        # Move piece and undo if invalid move
+        """
+        Applies the given action in the environment.
+        It works by taking the action and redoing if the piece ends up
+        in an invalid configuration.
+        :param action: Action given to environment (String)
+        :return: None
+        """
         if action == 0:
             pass
         elif action == 1:
@@ -259,7 +274,10 @@ class Tetris(gym.Env):
         return True
 
     def drop(self):
-        # Let piece drop
+        """
+        Drop the piece one unit down.
+        :return: None
+        """
         self.piece.y += 1
         if not self._valid_position():
             self.piece.y -= 1
@@ -318,9 +336,6 @@ class Tetris(gym.Env):
         self.board[2:22, 3:13] = grid
 
     def render(self, mode="human"):
-        if not self.rendering:
-            self.init_render()
-
         # Clear the screen
         self.screen.fill(self.black)
 
@@ -356,129 +371,30 @@ class Tetris(gym.Env):
         pygame.display.flip()
 
     def reset(self):
-        self.board = new_board()
+        """
+        Resets game by creating new board and pieces
+        :return: None
+        """
+        self.board = self.new_board()
         self.piece = Piece()
+        self.next_piece = Piece()
+        self.shift_piece = None
 
         return self.get_state()
 
     def close(self):
+        """
+        Close down the game
+        :return: None
+        """
         pygame.quit()
 
-    def init_render(self):
-        self.screen = pygame.display.set_mode([self.screen_size, self.screen_size])
-        pygame.display.set_caption('Tetris')
-        self.background = pygame.Surface(self.screen.get_size())
-        self.rendering = True
-        self.clock = pygame.time.Clock()
-
-        # Set up game
-        self.bigfont = pygame.font.Font(None, 80)
-        self.scorefont = pygame.font.Font(None, 30)
-
     def get_state(self):
+        """
+        Returns all relevant information
+        :return: None
+        """
         next_piece_position = np.zeros(7)
         next_piece_position[self.next_piece.tetromino] = 1
         observation = np.concatenate((self.board[2:22, 3:13].flat, next_piece_position.flat))
         return observation.reshape(207, 1)
-
-
-# Initialize the environment
-movement_list = [0, 1, 2, 3, 4, 5, 6]
-env = Tetris()
-env.reset()
-
-# Definitions and default settings
-run = False
-action_taken = False
-slow = True
-runai = False
-render = True
-done = False
-drop_time = 0
-drop_speed = 0.06
-
-clock = pygame.time.Clock()
-
-while run:
-    clock.tick(40)
-    drop_time += clock.get_rawtime()  # Time since last iteration (ms)
-
-    if drop_time / 1000 > drop_speed:  # Drop piece
-        drop_time = 0
-        env.drop()
-
-        # Process game events
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            run = False
-        if event.type == pygame.KEYDOWN:
-            if event.key in [pygame.K_ESCAPE, pygame.K_q]:
-                run = False
-            if event.key == pygame.K_RIGHT:
-                action, action_taken = 1, True
-            if event.key == pygame.K_LEFT:
-                action, action_taken = 2, True
-            if event.key == pygame.K_UP:
-                action, action_taken = 3, True
-            if event.key == pygame.K_DOWN:
-                action, action_taken = 4, True
-            if event.key == pygame.K_z:
-                action, action_taken = 5, True
-            elif event.key == pygame.K_x:
-                action, action_taken = 6, True
-            elif event.key == pygame.K_SPACE:
-                action, action_taken = 7, True
-            elif event.key == pygame.K_e:
-<<<<<<< Updated upstream:Fabian/Tetris_env/TetEnv.py
-                action, action_taken = 8, True
-=======
-                action, action_taken = "change", True
-            elif event.key == pygame.K_LSHIFT:
-                action, action_taken = "shift", True
-            elif event.key == pygame.K_r:
-                env.reset()
-            elif event.key == pygame.K_p:
-                pause = True
-                while pause:
-                    clock.tick(40)
-                    for event in pygame.event.get():
-                        if event.type == pygame.QUIT:
-                            pygame.quit()
-                            quit()
-                        if event.type == pygame.KEYDOWN:
-                            if event.key in [pygame.K_ESCAPE, pygame.K_q]:
-                                pygame.quit()
-                                quit()
-                            elif event.key == pygame.K_p:
-                                pause = False
-    if dos_lag / 1000 > 0.05 and dos / 1000 > 0.02:
-        dos = 0
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_RIGHT]:
-            action, action_taken = "right", True
-        elif keys[pygame.K_LEFT]:
-            action, action_taken = "left", True
-        if keys[pygame.K_DOWN]:
-            action, action_taken = "down", True
-        if keys[pygame.K_ESCAPE]:
-            pygame.quit()
-            break
->>>>>>> Stashed changes:Jason/Tetris.py
-
-    # AI controller
-    if runai:
-        pass
-
-    # Human controller
-    else:
-        if action_taken:
-            env.step(action)
-            action_taken = False
-            print(env.get_state())
-
-    if render:
-        env.render()
-
-env.close()
-
-

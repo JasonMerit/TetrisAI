@@ -1,4 +1,6 @@
-# Tetris game
+# Grid World game
+
+# Import libraries used for this program
 
 import pygame
 import numpy as np
@@ -123,14 +125,6 @@ class Piece():
         self.shape = self.shapes[self.tetromino][self.rotation]
         self.color = self.shape_colors[self.tetromino]
 
-def new_board():
-    board = np.zeros([22, 10])
-    wall = np.ones([22, 2])
-    floor = np.ones([2, 15])
-    board = np.c_[np.ones(22), wall, board, wall]
-    board = np.vstack((board, floor))
-    return board
-
 class Tetris():
     """
     Tetris class acting as enviroment. 
@@ -223,7 +217,7 @@ class Tetris():
         # Get area of board that the shape covers
         x, y = self.piece.x, self.piece.y
         size = len(self.piece.shape)
-        sub_board = self.board[y:y + size, x:x + size]
+        sub_board = self.board[y:y+size, x:x+size]
 
         # Check for collision by summing and checking for 2
         collision_matrix = self.piece.shape + sub_board
@@ -378,112 +372,21 @@ class Tetris():
         """
         pygame.quit()
 
+    def new_board(self):
+        """
+        Returns an empty board
+        :return: empty board (np.array)
+        """
+        board = np.zeros([22, 10])
+        wall = np.ones([22, 2])
+        floor = np.ones([2, 15])
+        board = np.c_[np.ones(22), wall, board, wall]
+        board = np.vstack((board, floor))
+        return board
+
     def get_state(self):
         """
         Returns all relevant information
         :return: None
         """
         return self.board
-
-
-# Initialize the environment
-env = Tetris()
-env.reset()
-board = env.get_state()
-
-# Definitions and default settings
-actions = ['left', 'right', 'up', 'down']
-run = True
-action_taken = False
-slow = True
-runai = False
-render = True
-done = False
-drop_time = 0
-drop_speed = 0.06
-dos = 0
-dos_lag = 0
-
-clock = pygame.time.Clock()
-
-while run:
-    clock.tick(40)
-    drop_time += clock.get_rawtime()  # Time since last iteration (ms)
-    dos += clock.get_rawtime()
-    dos_lag += clock.get_rawtime()
-
-    if drop_time / 1000 > drop_speed:  # Drop piece
-        drop_time = 0
-        env.drop()
-
-    # Process game events
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            run = False
-        if event.type == pygame.KEYDOWN:
-            dos_lag = 0
-            if event.key in [pygame.K_ESCAPE, pygame.K_q]:
-                run = False
-            if event.key == pygame.K_RIGHT:
-                action, action_taken = "right", True
-            if event.key == pygame.K_LEFT:
-                action, action_taken = "left", True
-            if event.key == pygame.K_UP:
-                action, action_taken = "rotate", True
-            if event.key == pygame.K_DOWN:
-                action, action_taken = "down", True
-            if event.key == pygame.K_z:
-                action, action_taken = "lotate", True
-            elif event.key == pygame.K_x:
-                action, action_taken = "rotate", True
-            elif event.key == pygame.K_SPACE:
-                action, action_taken = "drop", True
-            elif event.key == pygame.K_e:
-                action, action_taken = "change", True
-            elif event.key == pygame.K_LSHIFT:
-                action, action_taken = "shift", True
-            elif event.key == pygame.K_r:
-                env.reset()
-            elif event.key == pygame.K_p:
-                pause = True
-                while pause:
-                    clock.tick(40)
-                    for event in pygame.event.get():
-                        if event.type == pygame.QUIT:
-                            pygame.quit()
-                            quit()
-                        if event.type == pygame.KEYDOWN:
-                            if event.key in [pygame.K_ESCAPE, pygame.K_q]:
-                                pygame.quit()
-                                quit()
-                            elif event.key == pygame.K_p:
-                                pause = False
-    if dos_lag / 1000 > 0.05 and dos / 1000 > 0.02:
-        dos = 0
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_RIGHT]:
-            action, action_taken = "right", True
-        elif keys[pygame.K_LEFT]:
-            action, action_taken = "left", True
-        if keys[pygame.K_DOWN]:
-            action, action_taken = "down", True
-        if keys[pygame.K_ESCAPE]:
-            pygame.quit()
-            break
-
-    # AI controller
-    if runai:
-        pass
-
-    # Human controller
-    else:
-        if action_taken:
-            env.step(action)
-            action_taken = False
-
-    if render:
-        env.render()
-
-env.close()
-
-
