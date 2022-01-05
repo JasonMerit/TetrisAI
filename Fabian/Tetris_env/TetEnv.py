@@ -431,7 +431,41 @@ while run:
             elif event.key == pygame.K_SPACE:
                 action, action_taken = 7, True
             elif event.key == pygame.K_e:
+<<<<<<< Updated upstream:Fabian/Tetris_env/TetEnv.py
                 action, action_taken = 8, True
+=======
+                action, action_taken = "change", True
+            elif event.key == pygame.K_LSHIFT:
+                action, action_taken = "shift", True
+            elif event.key == pygame.K_r:
+                env.reset()
+            elif event.key == pygame.K_p:
+                pause = True
+                while pause:
+                    clock.tick(40)
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            pygame.quit()
+                            quit()
+                        if event.type == pygame.KEYDOWN:
+                            if event.key in [pygame.K_ESCAPE, pygame.K_q]:
+                                pygame.quit()
+                                quit()
+                            elif event.key == pygame.K_p:
+                                pause = False
+    if dos_lag / 1000 > 0.05 and dos / 1000 > 0.02:
+        dos = 0
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_RIGHT]:
+            action, action_taken = "right", True
+        elif keys[pygame.K_LEFT]:
+            action, action_taken = "left", True
+        if keys[pygame.K_DOWN]:
+            action, action_taken = "down", True
+        if keys[pygame.K_ESCAPE]:
+            pygame.quit()
+            break
+>>>>>>> Stashed changes:Jason/Tetris.py
 
     # AI controller
     if runai:
@@ -448,3 +482,5 @@ while run:
         env.render()
 
 env.close()
+
+
