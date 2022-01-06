@@ -132,7 +132,7 @@ class Tetris(gym.Env):
     detection, as such occationally the a submatrix is constructed. 
     """
     metadata = {'render.modes': ['human']}
-    
+
     # Rendering Dimensions
     screen_size = 600
     cell_size = 25
@@ -161,52 +161,35 @@ class Tetris(gym.Env):
         self.piece = Piece()
         self.next_piece = Piece()
         self.shifted = False
-        
+
         self.screen = pygame.display.set_mode([self.screen_size, self.screen_size])
         pygame.display.set_caption('Tetris')
         self.background = pygame.Surface(self.screen.get_size())
 
     def step(self, action):
         """
-        Applies the given action in the environment, and drops the piece one spot afterwards
-        It works by taking the action and redoing if the piece ends up
-        in an invalid configuration.
-        :param action: Action given to environment (String)
+        Places the piece according to action, then spawns a new piece
+        :param action: Action given to environment (tuple)
         :return: None
         """
-        if action == 0:
-            pass
-        elif action == 1:
-            self.piece.x -= 1   # Move left
-            if not self._valid_position():
-                self.piece.x += 1
-        elif action == 2:
-            self.piece.x += 1   # Move right
-            if not self._valid_position():
-                self.piece.x -= 1
-        elif action == 3:
-            self.piece.y += 1   # Move down
-            if not self._valid_position():
-                self.piece.y -= 1
-                self.new_piece()
-        elif action == 4:
-            self.piece.rotate()     # Rotate clockwise
-            if not self._valid_position():
-                self.piece.rotate(False)
-        elif action == 5:
-            self.piece.rotate(False)    # Rotate counter-clockwise
-            if not self._valid_position():
-                self.piece.rotate(True)
-        elif action == 6:
-            while self._valid_position():   # Full drop
-                self.piece.y += 1
-            self.piece.y -= 1
+        reward = 0
+        lines = self.lines_to_clear()
+        if len(lines) == 1:
+            reward += 40
+        elif len(lines) == 2:
+            reward += 100
+        elif len(lines) == 3:
+            reward += 300
+        elif len(lines) == 4:
+            reward += 1200
 
-        placed = self.drop()
-        reward = self.get_reward(placed)
-        if placed:
-            self.new_piece()
-        return self.get_state(), reward, self.game_over(), {}
+        if self.game_over():
+            reward -= 5
+
+        self.clear_lines(lines)
+        self.new_piece()
+
+        return self.get_placed_states_and_features(), reward, self.game_over(), {}
 
     def new_board(self):
         board = np.zeros([22, 10])
@@ -217,12 +200,12 @@ class Tetris(gym.Env):
         return board
 
     def lock_height(self):
-        if self.piece.tetromino < 6:    # all except long bar always need only an offset of 1 or 0 relative to their y
+        if self.piece.tetromino < 6:  # all except long bar always need only an offset of 1 or 0 relative to their y
             if self.piece.shape[2].any():
                 return 20 - self.piece.y - 1
             else:
                 return 20 - self.piece.y
-        else:   # long bar either needs an offset of 1 or 2
+        else:  # long bar either needs an offset of 1 or 2
             if self.piece.shape[2].any():
                 return 20 - self.piece.y - 1
             else:
@@ -245,37 +228,31 @@ class Tetris(gym.Env):
         bumpiness = 0
         for i in range(9):
             bumpiness += abs(board[:, i].argmax() - board[:, i + 1].argmax())
-
         return bumpiness
 
-    def get_reward(self, placed):
-        reward = 0
-        # reward the change in score
-        reward += self.score - self.current_score
-        # greatly reward a line being cleared
-        reward += (self.number_of_lines - self.current_lines)
-        # some rewards are only relevant when the tetromino is placed
-        if placed:
-            # reward -= (self.aggregate_height() - self.current_height)     # - when increasing, + when decreasing
-            # reward -= self.get_bumpiness() * 0.2  # even boards are best, scale to match the others, bad IMO
-            reward -= (self.lock_height() - 4)    # tetrominos in the bottom 4 rows are good, punish anything higher
+    def lines_to_clear(self):
+        """
+        Check and clear lines if rows are full
+        """
+        # Get visual part of board
+        grid = self.board[2:22, 3:13]
+        idx = np.array([], dtype=int)
 
-        # big penalty for loosing
-        if self.game_over():
-            reward -= 20
+        # Find complete rows in reverse order
+        for r in reversed(range(len(grid))):  # Count rows to remove in reverse order
+            if grid[r].all():
+                idx = np.append(idx, r)
+        return idx
 
-        # update the locals
-        self.current_score = self.score
-        self.current_lines = self.number_of_lines
-        self.current_height = self.aggregate_height()
-        return reward
+    def get_reward(self):
+        return [self.aggregate_height(), self.get_bumpiness(), self.lock_height(), self.lines_to_clear()]
 
     def _valid_position(self):
         """
         Returns whether the current position is valid.
         Assumes piece is positioned inside board.
         """
-        # Get area of board that the shape covers
+        # Get the area of board that the shape covers
         x, y = self.piece.x, self.piece.y
         size = len(self.piece.shape)
         sub_board = self.board[y:y + size, x:x + size]
@@ -287,10 +264,10 @@ class Tetris(gym.Env):
             return False
         return True
 
-    def drop(self):
+    def placed(self):
         """
         Drop the piece one unit down.
-        :return: None
+        :return True if placed
         """
         self.piece.y += 1
         if not self._valid_position():
@@ -302,7 +279,6 @@ class Tetris(gym.Env):
         Registers current piece into board, creates new piece and
         determines if game over
         """
-
         # Find coordinates the current piece inhabits
         indices = np.where(self.piece.shape == 1)
         a, b = indices[0], indices[1]
@@ -316,7 +292,6 @@ class Tetris(gym.Env):
         # Get new piece
         self.piece = self.next_piece
         self.next_piece = Piece()
-        self.clear_lines()
 
         if self.game_over():
             self.reset()
@@ -327,20 +302,9 @@ class Tetris(gym.Env):
             return True
         return False
 
-    def clear_lines(self):
-        """
-        Check and clear lines if rows are full
-        """
-        # Get visual part of board
-        grid = self.board[2:22, 3:13]
-        idx = np.array([], dtype=int)
-
-        # Find complete rows in reverse order
-        for r in reversed(range(len(grid))):  # Count rows to remove in reverse order
-            if grid[r].all():
-                idx = np.append(idx, r)
-
+    def clear_lines(self, idx):
         # Now clear the rows
+        grid = self.board[2:22, 3:13]
         for c in idx:
             grid = np.delete(grid, c, 0)  # Remove the cleared row
             grid = np.vstack((np.zeros(10), grid))  # Add an empty row on top
@@ -412,3 +376,21 @@ class Tetris(gym.Env):
         next_piece_position[self.next_piece.tetromino] = 1
         observation = np.concatenate((self.board[2:22, 3:13].flat, next_piece_position.flat))
         return observation.reshape(207, 1)
+
+    def get_placed_states_and_features(self):
+        states = []
+        features = []
+
+        for rotation in range(self.piece.shapes[self.piece.tetromino]):    # Check every rotation
+            self.piece.rotation = rotation
+            self.piece.shape = self.piece.shapes[self.piece.tetromino][rotation]
+            for x in range(3,13):                   # Check every x value
+                self.piece.x = x                    # Compensate for the columns of ones on the left side
+                for y in range(2,22):               # Check every y value
+                    self.piece.y = y                # Compensate for the two irrelevant rows at the top
+                    if self._valid_position() and self.placed():  # If the position is valid, and piece is placed
+                        # Each state consists of a tuple containing x,y position and rotation,
+                        # and an array of the heuristics values
+                        states.append([self.piece.x, self.piece.y, self.piece.rotation])
+                        features.append([self.get_reward()])
+        return states, features
