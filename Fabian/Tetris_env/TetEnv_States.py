@@ -172,24 +172,36 @@ class Tetris(gym.Env):
         :param action: Action given to environment (tuple)
         :return: None
         """
-        reward = 0
-        lines = self.lines_to_clear()
-        if len(lines) == 1:
-            reward += 40
-        elif len(lines) == 2:
-            reward += 100
-        elif len(lines) == 3:
-            reward += 300
-        elif len(lines) == 4:
-            reward += 1200
+        self.piece.x = action[0]
+        self.piece.y = action[1]
+        self.piece.rotation = action[2]
 
-        if self.game_over():
-            reward -= 5
+        score = self.get_new_score()
+        self.score += score
 
         self.clear_lines(lines)
         self.new_piece()
 
-        return self.get_placed_states_and_features(), reward, self.game_over(), {}
+        observation = self.get_placed_states_and_features()
+
+        return observation, score, self.game_over(), {}
+
+    def get_new_score(self):
+        score = 0
+        lines = self.full_rows()
+
+        if len(lines) == 1:
+            score += 40
+        elif len(lines) == 2:
+            score += 100
+        elif len(lines) == 3:
+            score += 300
+        elif len(lines) == 4:
+            score += 1200
+
+        score += 20 - self.lock_height()  # The AI is assumed to press down instantly, thus triggering the reward
+
+        return score
 
     def new_board(self):
         board = np.zeros([22, 10])
@@ -202,14 +214,14 @@ class Tetris(gym.Env):
     def lock_height(self):
         if self.piece.tetromino < 6:  # all except long bar always need only an offset of 1 or 0 relative to their y
             if self.piece.shape[2].any():
-                return 20 - self.piece.y - 1
+                return self.height - self.piece.y - 1
             else:
-                return 20 - self.piece.y
+                return self.height - self.piece.y
         else:  # long bar either needs an offset of 1 or 2
             if self.piece.shape[2].any():
-                return 20 - self.piece.y - 1
+                return self.height - self.piece.y - 1
             else:
-                return 20 - self.piece.y - 2
+                return self.height - self.piece.y - 2
 
     def aggregate_height(self):
         """Return the height of the board."""
@@ -230,7 +242,7 @@ class Tetris(gym.Env):
             bumpiness += abs(board[:, i].argmax() - board[:, i + 1].argmax())
         return bumpiness
 
-    def lines_to_clear(self):
+    def full_rows(self):
         """
         Check and clear lines if rows are full
         """
@@ -244,8 +256,16 @@ class Tetris(gym.Env):
                 idx = np.append(idx, r)
         return idx
 
+    def difference_of_column_sums(self):
+        sum = 0
+        board = self.board[2:22][3:13]
+        for i in range(1, self.width):
+            sum += abs(board[:, i].sum() - board[:, i - 1].sum())
+        return sum
+
     def get_reward(self):
-        return [self.aggregate_height(), self.get_bumpiness(), self.lock_height(), self.lines_to_clear()]
+        return [self.aggregate_height(), self.get_bumpiness(), self.lock_height(), self.full_rows(),
+                self.get_new_score()]
 
     def _valid_position(self):
         """
@@ -297,8 +317,8 @@ class Tetris(gym.Env):
             self.reset()
 
     def game_over(self):
-        # Game over if piece out of screen
-        if np.any(self.board[2][3:13] == 1):
+        # Game over if blocked when spawned
+        if not self._valid_position():
             return True
         return False
 
@@ -381,13 +401,13 @@ class Tetris(gym.Env):
         states = []
         features = []
 
-        for rotation in range(self.piece.shapes[self.piece.tetromino]):    # Check every rotation
+        for rotation in range(self.piece.shapes[self.piece.tetromino]):  # Check every rotation
             self.piece.rotation = rotation
             self.piece.shape = self.piece.shapes[self.piece.tetromino][rotation]
-            for x in range(3,13):                   # Check every x value
-                self.piece.x = x                    # Compensate for the columns of ones on the left side
-                for y in range(2,22):               # Check every y value
-                    self.piece.y = y                # Compensate for the two irrelevant rows at the top
+            for x in range(3, 13):  # Check every x value
+                self.piece.x = x  # Compensate for the columns of ones on the left side
+                for y in range(2, 22):  # Check every y value
+                    self.piece.y = y  # Compensate for the two irrelevant rows at the top
                     if self._valid_position() and self.placed():  # If the position is valid, and piece is placed
                         # Each state consists of a tuple containing x,y position and rotation,
                         # and an array of the heuristics values
