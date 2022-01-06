@@ -20,7 +20,7 @@ class TrainLogging(BaseCallback):
 
     def _on_step(self):
         if self.n_calls % self.check_freq == 0:
-            model_path = os.path.join(self.save_path, f'best_PPO_model_{self.n_calls}')
+            model_path = os.path.join(self.save_path, f'best_DQN_model_{self.n_calls}')
             self.model.save(model_path)
 
         return True
@@ -29,13 +29,13 @@ class TrainLogging(BaseCallback):
 CHECKPOINT_DIR = './train/'
 LOG_DIR = './logs/'
 
-callback = TrainLogging(check_freq=50000, save_path=CHECKPOINT_DIR)
+callback = TrainLogging(check_freq=50001, save_path=CHECKPOINT_DIR)
 env = Tetris()
 check_env(env)
 env = DummyVecEnv([lambda:env])
 env.reset()
 
-model = PPO(policy='MlpPolicy', env=env, tensorboard_log=LOG_DIR)
+model = DQN(policy='MlpPolicy', env=env, tensorboard_log=LOG_DIR, exploration_final_eps=0.05)
 # model = PPO.load(CHECKPOINT_DIR + 'best_PPO_model_100000.zip')
 
 
