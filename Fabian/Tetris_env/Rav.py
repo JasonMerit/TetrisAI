@@ -1,10 +1,10 @@
 import numpy as np
+from TetEnv_States import Tetris
 
-
-sum = 0
-board = np.ones([20, 10])
-board[:, 1] = 0
-for i in range(1, 10):
-    sum += abs(board[:, i].sum() - board[:, i - 1].sum())
-
-print(sum)
+k = [1,1,1]
+l, m, n = k
+print(l,m,n)
+env = Tetris()
+env.render()
+env.step([5,5,0])
+env.render()

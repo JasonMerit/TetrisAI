@@ -178,8 +178,9 @@ class Tetris(gym.Env):
 
         score = self.get_new_score()
         self.score += score
-
-        self.clear_lines(lines)
+        # Place the current piece, before changing to a new one
+        self.place_piece()
+        self.clear_lines()
         self.new_piece()
 
         observation = self.get_placed_states_and_features()
@@ -294,21 +295,30 @@ class Tetris(gym.Env):
             self.piece.y -= 1
             return True
 
-    def new_piece(self):
-        """
-        Registers current piece into board, creates new piece and
-        determines if game over
-        """
+    def place_piece(self):
         # Find coordinates the current piece inhabits
         indices = np.where(self.piece.shape == 1)
-        a, b = indices[0], indices[1]
-        a, b = a + self.piece.y, b + self.piece.x
+        a, b = indices[0] + self.piece.y, indices[1] + self.piece.x
         coords = zip(a, b)
 
         # Change the board accordingly
         for c in coords:
             self.board[c] = 1
 
+    def remove_piece(self):
+        indices = np.where(self.piece.shape == 1)
+        a, b = indices[0] + self.piece.y, indices[1] + self.piece.x
+        coords = zip(a, b)
+
+        # Change the board accordingly
+        for c in coords:
+            self.board[c] = 0
+
+    def new_piece(self):
+        """
+        Registers current piece into board, creates new piece and
+        determines if game over
+        """
         # Get new piece
         self.piece = self.next_piece
         self.next_piece = Piece()
@@ -322,8 +332,9 @@ class Tetris(gym.Env):
             return True
         return False
 
-    def clear_lines(self, idx):
+    def clear_lines(self):
         # Now clear the rows
+        idx = self.full_rows()
         grid = self.board[2:22, 3:13]
         for c in idx:
             grid = np.delete(grid, c, 0)  # Remove the cleared row
@@ -400,8 +411,8 @@ class Tetris(gym.Env):
     def get_placed_states_and_features(self):
         states = []
         features = []
-
-        for rotation in range(self.piece.shapes[self.piece.tetromino]):  # Check every rotation
+        current_piece = [self.piece.x, self.piece.y, self.piece.rotation]
+        for rotation in range(len(self.piece.shapes[self.piece.tetromino])):  # Check every rotation
             self.piece.rotation = rotation
             self.piece.shape = self.piece.shapes[self.piece.tetromino][rotation]
             for x in range(3, 13):  # Check every x value
@@ -409,8 +420,13 @@ class Tetris(gym.Env):
                 for y in range(2, 22):  # Check every y value
                     self.piece.y = y  # Compensate for the two irrelevant rows at the top
                     if self._valid_position() and self.placed():  # If the position is valid, and piece is placed
-                        # Each state consists of a tuple containing x,y position and rotation,
-                        # and an array of the heuristics values
-                        states.append([self.piece.x, self.piece.y, self.piece.rotation])
+                        # Placing the piece each time makes calculating heuristics simpler
+                        self.place_piece()
+                        states.append([self.piece.x, self.piece.y,
+                                       self.piece.rotation])  # Each state consists of x,y and rotation.
                         features.append([self.get_reward()])
+                        self.remove_piece()
+        # For rendering purposes, the piece must be placed back to its spawn
+        self.piece.x, self.piece.y, self.piece.rotation = current_piece[0], current_piece[1], current_piece[2]
         return states, features
+
