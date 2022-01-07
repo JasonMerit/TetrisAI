@@ -169,6 +169,7 @@ class Tetris(gym.Env):
     def step(self, action):
         """
         Places the piece according to action, then spawns a new piece
+        Assumes valid action
         :param action: Action given to environment (tuple)
         :return: None
         """
@@ -182,10 +183,66 @@ class Tetris(gym.Env):
         self.place_piece()
         self.clear_lines()
         self.new_piece()
+        actions, Features = self.get_placed_states_and_features()
+        print(actions, Features, self.game_over())
 
-        observation = self.get_placed_states_and_features()
+        return actions, Features, self.score, self.game_over(), {}
 
-        return observation, score, self.game_over(), {}
+    def render(self, mode="human"):
+        # Clear the screen
+        self.screen.fill(self.black)
+
+        # Get and draw grid
+        grid = self.board[2:22, 3:13]
+        background = (self.top_left_x - 1,
+                      self.top_left_y - 1,
+                      self.width * self.cell_size + 1,
+                      self.height * self.cell_size + 1)
+        pygame.draw.rect(self.screen, self.grey, background)
+
+        for i in range(self.width):
+            for j in range(self.height):
+                val = grid[j, i]
+                color = self.grey if val != 0 else self.black
+                square = (self.top_left_x + self.cell_size * i,
+                          self.top_left_y + self.cell_size * j,
+                          self.cell_size - 1, self.cell_size - 1)
+                pygame.draw.rect(self.screen, color, square)
+
+        # Draw piece
+        size = len(self.piece.shape[0])
+        for i in range(size):
+            for j in range(size):
+                if self.piece.shape[i, j] == 0:
+                    continue
+                square = (self.top_left_x + self.cell_size * (self.piece.x + j - 3),  # POSITION HERE
+                          self.top_left_y + self.cell_size * (self.piece.y + i - 2),
+                          self.cell_size, self.cell_size)
+                pygame.draw.rect(self.screen, self.piece.color, square)
+
+        # Display
+        pygame.display.flip()
+
+    def reset(self):
+        """
+        Resets game by creating new board and pieces
+        :return: None
+        """
+        self.board = self.new_board()
+        self.piece = Piece()
+        self.next_piece = Piece()
+        self.score = 0
+
+        actions, Features = self.get_placed_states_and_features()
+
+        return actions, Features, self.score, self.game_over(), {}
+
+    def close(self):
+        """
+        Close down the game
+        :return: None
+        """
+        pygame.quit()
 
     def get_new_score(self):
         score = 0
@@ -265,10 +322,9 @@ class Tetris(gym.Env):
         return sum
 
     def get_reward(self):
-        return [self.aggregate_height(), self.get_bumpiness(), self.lock_height(), self.full_rows(),
-                self.get_new_score()]
+        return np.array([self.aggregate_height(), self.get_bumpiness(), self.lock_height(), len(self.full_rows()), self.get_new_score()])
 
-    def _valid_position(self):
+    def valid_position(self):
         """
         Returns whether the current position is valid.
         Assumes piece is positioned inside board.
@@ -281,7 +337,7 @@ class Tetris(gym.Env):
         # Check for collision by summing and checking for 2
         collision_matrix = self.piece.shape + sub_board
 
-        if np.any(collision_matrix == 2):
+        if np.any(collision_matrix > 1):
             return False
         return True
 
@@ -291,7 +347,7 @@ class Tetris(gym.Env):
         :return True if placed
         """
         self.piece.y += 1
-        if not self._valid_position():
+        if not self.valid_position():
             self.piece.y -= 1
             return True
 
@@ -328,7 +384,7 @@ class Tetris(gym.Env):
 
     def game_over(self):
         # Game over if blocked when spawned
-        if not self._valid_position():
+        if not self.valid_position():
             return True
         return False
 
@@ -344,89 +400,28 @@ class Tetris(gym.Env):
         # Add final result to board
         self.board[2:22, 3:13] = grid
 
-    def render(self, mode="human"):
-        # Clear the screen
-        self.screen.fill(self.black)
-
-        # Get and draw grid
-        grid = self.board[2:22, 3:13]
-        background = (self.top_left_x - 1,
-                      self.top_left_y - 1,
-                      self.width * self.cell_size + 1,
-                      self.height * self.cell_size + 1)
-        pygame.draw.rect(self.screen, self.grey, background)
-
-        for i in range(self.width):
-            for j in range(self.height):
-                val = grid[j, i]
-                color = self.grey if val != 0 else self.black
-                square = (self.top_left_x + self.cell_size * i,
-                          self.top_left_y + self.cell_size * j,
-                          self.cell_size - 1, self.cell_size - 1)
-                pygame.draw.rect(self.screen, color, square)
-
-        # Draw piece
-        size = len(self.piece.shape[0])
-        for i in range(size):
-            for j in range(size):
-                if self.piece.shape[i, j] == 0:
-                    continue
-                square = (self.top_left_x + self.cell_size * (self.piece.x + j - 3),  # POSITION HERE
-                          self.top_left_y + self.cell_size * (self.piece.y + i - 2),
-                          self.cell_size, self.cell_size)
-                pygame.draw.rect(self.screen, self.piece.color, square)
-
-        # Display
-        pygame.display.flip()
-
-    def reset(self):
-        """
-        Resets game by creating new board and pieces
-        :return: None
-        """
-        self.board = self.new_board()
-        self.piece = Piece()
-        self.next_piece = Piece()
-        self.shift_piece = None
-
-        return self.get_state()
-
-    def close(self):
-        """
-        Close down the game
-        :return: None
-        """
-        pygame.quit()
-
-    def get_state(self):
-        """
-        Returns all relevant information
-        :return: None
-        """
-        next_piece_position = np.zeros(7)
-        next_piece_position[self.next_piece.tetromino] = 1
-        observation = np.concatenate((self.board[2:22, 3:13].flat, next_piece_position.flat))
-        return observation.reshape(207, 1)
-
     def get_placed_states_and_features(self):
-        states = []
-        features = []
+        """
+        Checks for every possible configuration of the current piece if
+        the piece is in a valid position and if it has been placed
+        returns a list of [states, features]
+        """
+        actions = []
+        Features = []
         current_piece = [self.piece.x, self.piece.y, self.piece.rotation]
         for rotation in range(len(self.piece.shapes[self.piece.tetromino])):  # Check every rotation
             self.piece.rotation = rotation
             self.piece.shape = self.piece.shapes[self.piece.tetromino][rotation]
-            for x in range(3, 13):  # Check every x value
-                self.piece.x = x  # Compensate for the columns of ones on the left side
-                for y in range(2, 22):  # Check every y value
-                    self.piece.y = y  # Compensate for the two irrelevant rows at the top
-                    if self._valid_position() and self.placed():  # If the position is valid, and piece is placed
+            for x in range(3, 12):  # Check every potentially valid x value
+                self.piece.x = x
+                for y in range(2, 21):  # Check every potentially valid y value
+                    self.piece.y = y
+                    if self.valid_position() and self.placed():  # If the position is valid, and piece is placed
                         # Placing the piece each time makes calculating heuristics simpler
                         self.place_piece()
-                        states.append([self.piece.x, self.piece.y,
-                                       self.piece.rotation])  # Each state consists of x,y and rotation.
-                        features.append([self.get_reward()])
+                        actions.append((x, y, rotation))
+                        Features.append(self.get_reward())
                         self.remove_piece()
-        # For rendering purposes, the piece must be placed back to its spawn
+                        # For rendering purposes, the piece must be placed back to its spawn
         self.piece.x, self.piece.y, self.piece.rotation = current_piece[0], current_piece[1], current_piece[2]
-        return states, features
-
+        return actions, Features
