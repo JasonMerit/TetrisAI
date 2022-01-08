@@ -190,7 +190,7 @@ class Tetris(gym.Env):
         self.new_piece()
         actions, Features = self.search_actions_features()
 
-        return actions, Features, self.score, self.game_over(), {}
+        return actions, Features, self.score, not self.valid_position(), {}
 
     def render(self, mode="human"):
         # Clear the screen
@@ -262,12 +262,6 @@ class Tetris(gym.Env):
         board = np.c_[np.ones(self.height + 2), wall, board, wall]
         board = np.vstack((board, floor))
         return board
-
-    def game_over(self):
-        # Game over if blocked when spawned
-        if not self.valid_position():
-            return True
-        return False
 
     def clear_lines(self):
         # Now clear the rows
