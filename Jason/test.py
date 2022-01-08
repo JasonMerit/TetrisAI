@@ -6,6 +6,8 @@ Created on Mon Jan  3 13:18:03 2022
 """
 import numpy as np
 import pygame
+import os
+os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (40,40)
 S = np.array([[[0,0,0],
                [0,1,1],
                [1,1,0]],
@@ -13,6 +15,9 @@ S = np.array([[[0,0,0],
                [0,1,1],
                [0,0,1]]])
 x, y = 22, 10
+kek = False
+circles = []
+
 
 board = np.array([[1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
                  [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
@@ -27,18 +32,25 @@ board = np.array([[1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
                  [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
                  [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
                  [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
-                 [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
-                 [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
-                 [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
-                 [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
-                 [1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
-                 [1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 1, 1],
-                 [1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 1, 1],
-                 [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1],
-                 [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1],
+                 [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+                 [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+                 [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+                 [1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1],
+                 [1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1],
+                 [1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1],
+                 [1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
+                 [1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
+                 [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
                  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
                  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]])
 
+def flip():
+    grid = board[2:22, 3:13]
+    grid = np.flip(grid, axis = 1)
+    board[2:22, 3:13] = grid
+
+if kek:
+    flip()
 
 
 def get_sub_board():
@@ -62,19 +74,73 @@ def game_over():
 #print(game_over())
 
 def well_cells():
-    well = 0
-    for x in range(3,13):
-        column = board[:, x]
-        y = np.argmax(column)
-        left = board[y-1, x-1]
-        right = board[y-1, x+1]
-        if left and right:
-            print("[{},{}], left: {}, right: {}".format(x, y, left, right))
-            well += 1
-    return well
+    """
+    Counting the well count by empty cells above their respective full columns
+    sandwiched from sides with full cells. 
     
+    Start from the second column to first wall (inclusive), 
+    find highest full cell, check sandwich for empty cells left and down,
+    """
+    well = 0
+    for x in range(4,14):
+        # c = coumn, lc = left_column
+        c, lc = board[:, x], board[:, x-1]
+        top_c = np.argmax(c)
+        top_lc = np.argmax(lc)
+        if top_lc <= top_c:
+            continue
+        
+        # Iterate down through empty left column and check for sandwich
+        y, value = 0, lc[top_c]
+        while value != 1:
+            if sandwiched(x-1, top_c + y):
+                circles.append((x-1, top_c + y))
+                well += 1
+            y += 1
+            value = lc[top_c + y]
 
-print(well_cells())
+    return well
+
+def sandwiched(x, y):
+    left = board[y, x-1]
+    right = board[y, x+1]
+    return left and right
+    
+    
+#print(well_cells())
+
+def holes():
+    """
+    Hole is any empty space below the top full cell on neihbours
+    and current column
+    """
+    holes = 0
+    for x in range(3,13): # Count within visual width
+        # cc = current_column, lc = left_column, rc = right_column
+        lc, cc, rc = board[:, x-1], board[:, x], board[:, x+1]
+        top = np.argmax(cc)
+        
+        # Get relevant columns
+        lc_down = lc[top:] #same height, left and down
+        cc_down = cc[top+1:] # below and down
+        rc_down = rc[top:] # same height, right and down
+        
+        # Revert holes to filled
+        lc_down = negate(lc_down)
+        cc_down = negate(cc_down)
+        rc_down = negate(rc_down)
+        
+        keks = sum(lc_down) + sum(cc_down) + sum(rc_down)
+        holes += keks
+        # print("[{}] holes: {}  ".format(x-1, keks))
+    
+    return holes
+
+def negate(arr):
+    # https://stackoverflow.com/questions/56594598/change-1s-to-0-and-0s-to-1-in-numpy-array-without-looping
+    return np.where((arr==0)|(arr==1), arr^1, arr)
+
+print(holes())
 
 if False:
     a = get_sub_board()
@@ -144,17 +210,21 @@ for i in range(width):
                   cell_size - 1, cell_size - 1)
         pygame.draw.rect(screen, color, square)
 
+# Draw circles
+for x, y in circles:
+    center = (top_left_x + cell_size*(x-2.5), top_left_y + cell_size*(y-1.5))
+    pygame.draw.circle(screen, grey, center, 8)
+
 # Draw axis
 for y in range(height):
-    string = STAT_FONT.render(str(y),1,(255,255,255))
+    string = STAT_FONT.render(str(y+2),1,(255,255,255))
     screen.blit(string, (top_left_x - string.get_width() - 10, 
                          top_left_y+cell_size*y))
 for x in range(width):
-    string = STAT_FONT.render(str(x),1,(255,255,255))
-    screen.blit(string, (top_left_x + x*cell_size + 2, 
+    string = STAT_FONT.render(str(x+3),1,(255,255,255))
+    screen.blit(string, (top_left_x + x*cell_size + 4, 
                          top_left_y + height*cell_size))
-    
-
+  
 pygame.display.flip()
 
 run = True

@@ -188,6 +188,10 @@ class Tetris():
             if not self._valid_position():
                 self.piece.y -= 1
                 self.new_piece()
+        elif action == "up":
+            self.piece.y -= 1
+            if not self._valid_position():
+                self.piece.y += 1
         elif action == "rotate":
             self.piece.rotate()
             if not self._valid_position():
@@ -429,7 +433,7 @@ while run:
             if event.key == pygame.K_LEFT:
                 action, action_taken = "left", True
             if event.key == pygame.K_UP:
-                action, action_taken = "rotate", True
+                action, action_taken = "up", True
             if event.key == pygame.K_DOWN:
                 action, action_taken = "down", True
             if event.key == pygame.K_z:
@@ -458,7 +462,7 @@ while run:
                                 quit()
                             elif event.key == pygame.K_p:
                                 pause = False
-    if dos_lag / 1000 > 0.05 and dos / 1000 > 0.02:
+    if dos_lag / 1000 > 0.05 and dos / 1000 > 0.005:
         dos = 0
         keys = pygame.key.get_pressed()
         if keys[pygame.K_RIGHT]:

@@ -43,6 +43,7 @@ def eval_genomes(genomes, config):
     while len(envs) > 0:
         # Have each env take a step
         for x, env in enumerate(envs):
+            # Insert loop for each possible placed state and go from features
             input = tuple(env.get_state())
             output = nets[x].activate(input) # Returns a tuple of best action estimation
             action = output.index(max(output)) # Take max estimated action
