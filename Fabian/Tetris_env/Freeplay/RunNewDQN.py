@@ -26,8 +26,8 @@ class TrainLogging(BaseCallback):
         return True
 
 
-CHECKPOINT_DIR = './train/'
-LOG_DIR = './logs/'
+CHECKPOINT_DIR = 'train/'
+LOG_DIR = 'logs/'
 
 callback = TrainLogging(check_freq=50001, save_path=CHECKPOINT_DIR)
 env = Tetris()

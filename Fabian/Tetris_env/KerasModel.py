@@ -4,7 +4,6 @@ import os
 import random
 from tensorflow import keras
 from tensorflow.keras import layers
-from TetEnv import Tetris
 from pathlib import Path
 from collections import deque
 
@@ -114,7 +113,9 @@ class DQN:
             while not done:
                 steps += 1
                 action, future_features = self.take_action(actions_list, Features_list)
-                actions_list, Features_list, score, done, _ = self.env.step(action)
+                actions_list, Features_list, score, done, _ = self.env.step(np.array(action))
+                if len(actions_list) < 1:
+                    break
                 self.replay_memory.append((current_features, score, done, future_features))
                 current_features = future_features
                 current_score += score

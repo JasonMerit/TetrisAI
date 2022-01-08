@@ -11,7 +11,7 @@ import time
 env = Tetris()
 env = DummyVecEnv([lambda:env])
 state = env.reset()
-CHECKPOINT_DIR = './train/'
+CHECKPOINT_DIR = 'train/'
 
 model = DQN.load(CHECKPOINT_DIR + 'best_DQN_model_2600052.zip')
 
