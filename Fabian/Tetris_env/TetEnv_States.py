@@ -428,16 +428,7 @@ class Tetris(gym.Env):
             for state in loop_list:
                 for action in range(1, 6):  # 1 through 5 are valid actions
                     self.piece.update_pos(state)  # Place the piece in the state from which to explore
-                    if action == 1:
-                        self.piece.x -= 1  # Move left
-                    elif action == 2:
-                        self.piece.x += 1  # Move right
-                    elif action == 3:
-                        self.piece.y += 1  # Move down
-                    elif action == 4:
-                        self.piece.rotate()  # Rotate clockwise
-                    elif action == 5:
-                        self.piece.rotate(False)  # Rotate counter-clockwise
+                    self.search_step(action)
                     pos = self.piece.get_pos()
                     if pos not in visited and self.valid_position():
                         visited.add(pos)    # Ensure that we only explore from this specific state once
