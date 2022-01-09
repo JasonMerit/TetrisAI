@@ -2,9 +2,6 @@ import pygame
 import numpy as np
 import random
 
-# dic = {"Z": 1, "I": 2, "J": 5, "T": 7, "L": 9, "S": 14, "O": 19}
-# random.seed(dic["I"])
-
 
 class Piece:
     """
