@@ -1,398 +1,274 @@
-import pygame
+# -*- coding: utf-8 -*-
+"""
+TestingEnvironment. Draw and manipulate board to see how environment
+responds. All rendering is done from this script.
+"""
 import numpy as np
-import random
+from FreePlayTetris import Tetris
+import pygame
+import os
+os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (40,40)
 
-class Piece:
+h_flip = False
+x, y = 3, 11
+
+circles = []
+
+
+board = np.array([[1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+                 [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+                 [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+                 [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+                 [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+                 [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+                 [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+                 [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+                 [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+                 [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+                 [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+                 [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+                 [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+                 [1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1],
+                 [1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1],
+                 [1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1],
+                 [1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
+                 [1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
+                 [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                 [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]])
+
+height = len(board) - 4
+width = len(board[0]) - 5
+
+def flip():
+    grid = board[2:2 + height, 3:3 + width]
+    grid = np.flip(grid, axis = 1)
+    board[2:2 + height, 3:3 + width] = grid
+
+if h_flip:
+    flip()
+
+env = Tetris(board, False)
+env.piece.set((x, y, 0))
+
+def get_grid():
+    return env.board[2:2 + height, 3:3 + width]
+
+def well_cells():
     """
-    Piece class representing a tetromino.
-    """
-
-    S = np.array([[[0, 0, 0],
-                   [0, 1, 1],
-                   [1, 1, 0]],
-                  [[0, 1, 0],
-                   [0, 1, 1],
-                   [0, 0, 1]]])
-
-    Z = np.array([[[0, 0, 0],
-                   [1, 1, 0],
-                   [0, 1, 1]],
-                  [[0, 0, 1],
-                   [0, 1, 1],
-                   [0, 1, 0]]])
-
-    T = np.array([[[0, 0, 0],
-                   [1, 1, 1],
-                   [0, 1, 0]],
-                  [[0, 1, 0],
-                   [1, 1, 0],
-                   [0, 1, 0]],
-                  [[0, 1, 0],
-                   [1, 1, 1],
-                   [0, 0, 0]],
-                  [[0, 1, 0],
-                   [0, 1, 1],
-                   [0, 1, 0]]])
-
-    L = np.array([[[0, 0, 0],
-                   [1, 1, 1],
-                   [1, 0, 0]],
-                  [[1, 1, 0],
-                   [0, 1, 0],
-                   [0, 1, 0]],
-                  [[0, 0, 1],
-                   [1, 1, 1],
-                   [0, 0, 0]],
-                  [[0, 1, 0],
-                   [0, 1, 0],
-                   [0, 1, 1]]])
-
-    J = np.array([[[0, 0, 0],
-                   [1, 1, 1],
-                   [0, 0, 1]],
-                  [[0, 1, 0],
-                   [0, 1, 0],
-                   [1, 1, 0]],
-                  [[1, 0, 0],
-                   [1, 1, 1],
-                   [0, 0, 0]],
-                  [[0, 1, 1],
-                   [0, 1, 0],
-                   [0, 1, 0]]])
-
-    O = np.array([[[0, 0, 0, 0],
-                   [0, 1, 1, 0],
-                   [0, 1, 1, 0],
-                   [0, 0, 0, 0]]])
-
-    I = np.array([[[0, 0, 0, 0],
-                   [0, 0, 0, 0],
-                   [1, 1, 1, 1],
-                   [0, 0, 0, 0]],
-                  [[0, 0, 1, 0],
-                   [0, 0, 1, 0],
-                   [0, 0, 1, 0],
-                   [0, 0, 1, 0]]])
-
-    shapes = [S, Z, T, L,
-              J, O, I]
-    shape_colors = [(0, 255, 0), (255, 0, 0), (128, 0, 128), (255, 165, 0),
-                    (0, 0, 255), (255, 255, 0), (0, 255, 255)]
-
-    def __init__(self):
-        """
-        Initialize the object positioned at the top of board
-        :param teromino: shape of piece (int)
-        :return: None
-        """
-        self.rotation = 0
-        self.tetromino = random.randint(0, 6)
-        self.shape = self.shapes[self.tetromino][self.rotation]
-        self.color = self.shape_colors[self.tetromino]
-        # Spawn position depends on tetromino
-        self.y = 1 if self.tetromino < 6 else 0
-        self.x = 7 if self.tetromino < 5 else 6
-
-    def rotate(self, clockwise=True):
-        """
-        Rotates piece in either direction
-        :param clockwise: Rotates clockwise if true else counter-clockwise (bool)
-        :return: None
-        """
-        dir = 1 if clockwise else -1
-        num_rotations = len(self.shapes[self.tetromino])
-        self.rotation = (self.rotation + dir) % num_rotations
-        self.shape = self.shapes[self.tetromino][self.rotation]
-
-    def change(self):
-        """
-        Change current piece to another piece (for debugging)
-        :return: None
-        """
-        num_pieces = len(self.shapes)
-        self.tetromino = (self.tetromino + 1) % num_pieces
-        self.rotation = 0
-        self.shape = self.shapes[self.tetromino][self.rotation]
-        self.color = self.shape_colors[self.tetromino]
-
-
-class Tetris():
-    """
-    Tetris class acting as enviroment. 
-    The game data is represented using a matrix representing the board,
-    and piece objects. The board is extended out of view for easy collision
-    detection, as such occationally the a submatrix is constructed. 
-    """
+    Counting the well count by empty cells above their respective full columns
+    sandwiched from sides with full cells. 
     
-    # Colors
+    Start from the second column to first wall (inclusive), 
+    find highest full cell, check sandwich for empty cells left and down,
+    """
+    well = 0
+    for x in range(4,14):
+        # c = coumn, lc = left_column
+        c, lc = env.board[:, x], env.board[:, x-1]
+        top_c = np.argmax(c)
+        top_lc = np.argmax(lc)
+        if top_lc <= top_c:
+            continue
+        
+        # Iterate down through empty left column and check for sandwich
+        y, value = 0, lc[top_c]
+        while value != 1:
+            if sandwiched(x-1, top_c + y):
+                circles.append((x-1, top_c + y))
+                well += 1
+            y += 1
+            value = lc[top_c + y]
+
+    return well
+
+def sandwiched(x, y):
+    left = env.board[y, x-1]
+    right = env.board[y, x+1]
+    return left and right
+    
+    
+#print(well_cells())
+
+def holes():
+    """
+    Hole is any empty space below the top full cell on neihbours
+    and current column
+    """
+    holes = 0
+    for x in range(3,13): # Count within visual width
+        # cc = current_column, lc = left_column, rc = right_column
+        lc, cc, rc = env.board[:, x-1], env.board[:, x], env.board[:, x+1]
+        top = np.argmax(cc)
+        
+        # Get relevant columns
+        lc_down = lc[top:] #same height, left and down
+        cc_down = cc[top+1:] # below and down
+        rc_down = rc[top:] # same height, right and down
+        
+        # Revert holes to filled
+        lc_down = negate(lc_down)
+        cc_down = negate(cc_down)
+        rc_down = negate(rc_down)
+        
+        h_flips = sum(lc_down) + sum(cc_down) + sum(rc_down)
+        holes += h_flips
+        # print("[{}] holes: {}  ".format(x-1, h_flips))
+    
+    return holes
+
+def negate(arr):
+    # https://stackoverflow.com/questions/56594598/change-1s-to-0-and-0s-to-1-in-numpy-array-without-looping
+    return np.where((arr==0)|(arr==1), arr^1, arr)
+
+# print(holes())
+
+def cycle_states(states):
+    print("Final: {}".format(states))
+    print("")
+    starting_state = env.get_state()
+    for state in states:
+        print(state)
+        env.piece.set(state)
+        render()
+        clock.tick(1)
+        env.piece.set(starting_state)
+        render()
+        clock.tick(10)
+    env.set_state(starting_state)
+    
+        
+def render():
+    screen_size = 600
     black = (34, 34, 34)
     grey = (184, 184, 184)
-
-    def __init__(self, board, rendering = True):
-        pygame.init()
-        
-        #super(Tetris, self).__init__()
-        #self.action_space = spaces.Discrete(6)
-        # Observation space contains the board, and an extra row representing the next piece
-        #self.observation_space = spaces.Box(low=0, high=1, shape=(207, 1), dtype=int)
-
-        self.board = board if len(board) != 0 else self.new_board()
-        self.piece = Piece()
-        self.next_piece = Piece()
-        self.shifted = False
-        
-        self.current_score = 0
-        self.score = 0
-        self.current_lines = 0
-        self.current_height = 0
-        self.number_of_lines = 0
-               
-        # Rendering Dimensions
-        screen_size = 600
-        cell_size = 25
-        height = 10
-        width = 10
-        top_left_y = screen_size / 2 - height * cell_size / 2
-        top_left_x = screen_size / 2 - width * cell_size / 2
-        
-        if rendering:
-            self.screen = pygame.display.set_mode([self.screen_size, self.screen_size])
-            pygame.display.set_caption('Tetris')
-            self.background = pygame.Surface(self.screen.get_size())
-
-    def step(self, action):
-        """
-        Applies the given action in the environment.
-        It works by taking the action and redoing if the piece ends up
-        in an invalid configuration.
-        :param action: Action given to environment (String)
-        :return: None
-        """
-
-        if action == "left":
-            self.piece.x -= 1
-            if not self._valid_position():
-                self.piece.x += 1
-        elif action == "right":
-            self.piece.x += 1
-            if not self._valid_position():
-                self.piece.x -= 1
-        elif action == "down":
-            self.piece.y += 1
-            if not self._valid_position():
-                self.piece.y -= 1
-                self.new_piece()
-        elif action == "up":
-            self.piece.y -= 1
-            if not self._valid_position():
-                self.piece.y += 1
-        elif action == "rotate":
-            self.piece.rotate()
-            if not self._valid_position():
-                self.piece.rotate(False)
-        elif action == "lotate":
-                self.piece.rotate(False)
-                if not self._valid_position():
-                    self.piece.rotate(True)
-        elif action == "drop":
-            while self._valid_position():
-                self.piece.y += 1
-            self.piece.y -= 1
-            self.new_piece()
-        elif action == "change":
-            self.piece.change()
-
-        reward = self.get_reward()
-
-        return reward, self.game_over()
-
-    def board_height(self):
-        """Return the height of the board."""
-        board = self.board[2:22, 3:13]
-        # look for any piece in any row
-        board = board.any(axis=1)
-        # take to sum to determine the height of the board
-        return board.sum()
-
-    def get_bumpiness(self):
-        board = self.board[2:22, 3:13]
-        # bumpiness is the measure of the difference in heights between neighbouring columns
-        bumpiness = 0
-        for i in range(9):
-            bumpiness += abs(board[:, i].argmax() - board[:, i + 1].argmax())
-
-        return bumpiness
-
-    def get_reward(self):
-        reward = 0
-        # reward the change in score
-        reward += self.score - self.current_score
-        # greatly reward a line being cleared
-        reward += (self.number_of_lines - self.current_lines) * 100
-        # penalize a change in height
-        penalty = self.board_height() - self.current_height
-        # only apply the penalty for an increase in height (not a decrease)
-        if penalty > 0:
-            # punish the ai for having a bumpy board only when increasing its height
-            # until I find a smarter way to calculate bumpiness dependent on placing a piece
-            reward -= self.get_bumpiness()
-            reward -= penalty
-        # big penalty for loosing
-        if self.game_over():
-            reward -= 20
-        else:
-            reward += 0.01
-        # update the locals
-        self._current_score = self.score
-        self._current_lines = self.number_of_lines
-        self._current_height = self.board_height()
-
-        return reward
-
-    def valid_position(self):
-        """
-        Returns whether the current position is valid.
-        Assumes piece is positioned inside board.
-        """
-        # Get area of board the shape covers
-        x, y = self.piece.x, self.piece.y
-        size = len(self.piece.shape)
-        sub_board = self.board[y:y + size, x:x + size]
-
-        # Check for collision by summing and checking for overlap
-        if np.any(self.piece.shape + sub_board > 1):
-            return False
-        return True
-
-    def drop(self):
-        """
-        Drop the piece one unit down.
-        :return: None
-        """
-        self.piece.y += 1
-        if not self._valid_position():
-            self.piece.y -= 1
-            self.new_piece()
-
-    def new_piece(self):
-        """
-        Registers current piece into board, creates new piece and
-        determines if game over
-        """
-
-        # Find coordinates the current piece inhabits
-        indices = np.where(self.piece.shape == 1)
-        a, b = indices[0], indices[1]
-        a, b = a + self.piece.y, b + self.piece.x
-        coords = zip(a, b)
-
-        # Change the board accordingly
-        for c in coords:
-            self.board[c] = 1
-
-        # Get new piece
-        self.piece = self.next_piece
-        self.next_piece = Piece()
-        self.clear_lines()
-
-        if self.game_over(): # Add training bool
-            self.reset()
-
-    def game_over(self):
-        # Assumes piece just spawned
-        # Game over if blocked when spawned
-        return not self.valid_position()
+    cell_size = 25
+    top_left_y = screen_size / 2 - height * cell_size / 2
+    top_left_x = screen_size / 2 - width * cell_size / 2
     
-    def new_board(self):
-        board = np.zeros([self.height + 2, self.width])
-        wall = np.ones([self.height + 2, 2])
-        floor = np.ones([2, self.width + 5])
-        board = np.c_[np.ones(self.height + 2), wall, board, wall]
-        board = np.vstack((board, floor))
-        return board
+    pygame.font.init()  # init font
+    STAT_FONT = pygame.font.SysFont("comicsans", 20)
+    
+    
+    screen = pygame.display.set_mode([screen_size, screen_size])
+    pygame.display.set_caption('Tetris')
+    background = pygame.Surface(screen.get_size())
+    
+    screen.fill(black)
+    
+    # Get and draw grid
+    grid = get_grid()
+    background = (top_left_x - 1,
+                  top_left_y - 1,
+                  width * cell_size + 1,
+                  height * cell_size + 1)
+    pygame.draw.rect(screen, grey, background)
+    
+    
+    for i in range(width):
+        for j in range(height):
+            val = grid[j, i]
+            color = grey if val != 0 else black
+            square = (top_left_x + cell_size * i,
+                      top_left_y + cell_size * j,
+                      cell_size - 1, cell_size - 1)
+            pygame.draw.rect(screen, color, square)
+    
+    # Draw piece
+    size = len(env.piece.shape[0])
+    for i in range(size):
+        for j in range(size):
+            if env.piece.shape[i, j] == 0:
+                continue
+            square = (top_left_x + cell_size * (env.piece.x + j - 3),  # POSITION HERE
+                      top_left_y + cell_size * (env.piece.y + i - 2),
+                      cell_size, cell_size)
+            pygame.draw.rect(screen, env.piece.color, square)
+    
+    # Draw position
+    center = (top_left_x + cell_size*(env.piece.x-2.5), 
+              top_left_y + cell_size*(env.piece.y-1.5))
+    pygame.draw.circle(screen, (255,255,255), center, 8)
+    
+    # Draw circles
+    for x, y in circles:
+        center = (top_left_x + cell_size*(x-2.5), top_left_y + cell_size*(y-1.5))
+        pygame.draw.circle(screen, grey, center, 8)
+    
+    # Draw axis
+    for y in range(height):
+        string = STAT_FONT.render(str(y+2),1,(255,255,255))
+        screen.blit(string, (top_left_x - string.get_width() - 10, 
+                             top_left_y+cell_size*y))
+    for x in range(width):
+        string = STAT_FONT.render(str(x+3),1,(255,255,255))
+        screen.blit(string, (top_left_x + x*cell_size + 4, 
+                             top_left_y + height*cell_size))
+      
+    pygame.display.flip()
+    
 
-    def clear_lines(self):
-        """
-        Check and clear lines if rows are full
-        """
-        # Get visual part of board
-        grid = self.board[2:22, 3:13]
-        idx = np.array([], dtype=int)
 
-        # Find complete rows in reverse order
-        for r in reversed(range(len(grid))):  # Count rows to remove in reverse order
-            if grid[r].all():
-                idx = np.append(idx, r)
+render()
+clock = pygame.time.Clock()
+action_taken = False
+run = True
 
-        # Now clear the rows
-        for c in idx:
-            grid = np.delete(grid, c, 0)  # Remove the cleared row
-            grid = np.vstack((np.zeros(10), grid))  # Add an empty row on top
-            idx += 1  # Shift remaining clear rows a line down
+while run:
+    clock.tick(40)
 
-        # Add final result to board
-        self.board[2:22, 3:13] = grid
+    # Process game events
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            run = False
+        if event.type == pygame.KEYDOWN:
+            dos_lag = 0
+            if event.key in [pygame.K_ESCAPE, pygame.K_q]:
+                run = False
+            if event.key == pygame.K_RIGHT:
+                action, action_taken = "right", True
+            if event.key == pygame.K_LEFT:
+                action, action_taken = "left", True
+            if event.key == pygame.K_UP:
+                action, action_taken = "up", True
+            if event.key == pygame.K_DOWN:
+                action, action_taken = "drop", True
+            if event.key == pygame.K_z:
+                action, action_taken = "lotate", True
+            elif event.key == pygame.K_x:
+                action, action_taken = "rotate", True
+            elif event.key == pygame.K_SPACE:
+                action, action_taken = "slam", True
+            elif event.key == pygame.K_e:
+                action, action_taken = "change", True
+            elif event.key == pygame.K_r:
+                env.reset()
+            elif event.key == pygame.K_t:
+                states = env.get_final_states()
+                cycle_states(states)
+            elif event.key == pygame.K_p:
+                pause = True
+                while pause:
+                    clock.tick(40)
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            pygame.quit()
+                            quit()
+                        if event.type == pygame.KEYDOWN:
+                            if event.key in [pygame.K_ESCAPE, pygame.K_q]:
+                                pygame.quit()
+                                quit()
+                            elif event.key == pygame.K_p:
+                                pause = False
 
-    def render(self):
-        # Clear the screen
-        self.screen.fill(self.black)
+    if action_taken:
+        env.step(action)
+        
+        action_taken = False
+    
+        render()
 
-        # Get and draw grid
-        grid = self.board[2:22, 3:13]
-        background = (self.top_left_x - 1,
-                      self.top_left_y - 1,
-                      self.width * self.cell_size + 1,
-                      self.height * self.cell_size + 1)
-        pygame.draw.rect(self.screen, self.grey, background)
+pygame.quit()
 
-        for i in range(self.width):
-            for j in range(self.height):
-                val = grid[j, i]
-                color = self.grey if val != 0 else self.black
-                square = (self.top_left_x + self.cell_size * i,
-                          self.top_left_y + self.cell_size * j,
-                          self.cell_size - 1, self.cell_size - 1)
-                pygame.draw.rect(self.screen, color, square)
 
-        # Draw piece
-        size = len(self.piece.shape[0])
-        for i in range(size):
-            for j in range(size):
-                if self.piece.shape[i, j] == 0:
-                    continue
-                square = (self.top_left_x + self.cell_size * (self.piece.x + j - 3),  # POSITION HERE
-                          self.top_left_y + self.cell_size * (self.piece.y + i - 2),
-                          self.cell_size, self.cell_size)
-                pygame.draw.rect(self.screen, self.piece.color, square)
 
-        # Display
-        pygame.display.flip()
-
-    def reset(self):
-        """
-        Resets game by creating new board and pieces
-        :return: None
-        """
-        self.board = self.new_board()
-        self.piece = Piece()
-        self.next_piece = Piece()
-        self.shift_piece = None
-
-        return self.get_state()
-
-    def close(self):
-        """
-        Close down the game
-        :return: None
-        """
-        pygame.quit()
-
-    def get_state(self):
-        """
-        Returns all relevant information
-        :return: None
-        """
-        next_piece_position = np.zeros(7)
-        next_piece_position[self.next_piece.tetromino] = 1
-        observation = np.concatenate((self.board[2:22, 3:13].flat, next_piece_position.flat))
-        return observation.reshape(207, 1)
+        
