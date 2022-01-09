@@ -387,9 +387,7 @@ class Tetris():
         return (self.piece.x, self.piece.y, self.piece.rotation)
     
     def set_state(self, state):
-        self.piece.x = state[0]
-        self.piece.y = state[1]
-        self.piece.rotation = state[2] 
+        self.piece.set(state)
     
     def visit(self, action):
         """
