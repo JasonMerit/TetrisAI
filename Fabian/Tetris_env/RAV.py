@@ -1,7 +1,14 @@
+import numpy as np
+from TetEnv_States import Tetris
+from KerasModel import DQN
 
-o = [1,2,3,4]
 
+env = Tetris()
+agent = DQN(env=env)
+agent.train(games=0)
+actions, Features, score, done, _ = env.reset()
 
-for i in o:
-    o.append(i+4)
-print(o)
+env.step((3,8,0))
+print(env.placed())
+env.render()
+

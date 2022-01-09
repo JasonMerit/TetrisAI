@@ -118,22 +118,23 @@ class Piece:
         self.shape = self.shapes[self.tetromino][self.rotation]
         self.color = self.shape_colors[self.tetromino]
 
-    def get_pos(self, action):
+    def get_pos(self):
         # returns a tuple of four, as its main use is in the search for valid states
-        return self.x, self.y, self.rotation, action
+        return self.x, self.y, self.rotation
 
     def update_pos(self, pos):
         # pos is a tuple of four, as it is made to compliment get_pos
-        self.x, self.y, self.rotation, _ = pos
+        self.x, self.y, self.rotation = pos
+        self.shape = self.shapes[self.tetromino][self.rotation]
 
 
 # noinspection PyTypeChecker
 class Tetris(gym.Env):
     """
-    Tetris class acting as enviroment. 
+    Tetris class acting as environment.
     The game data is represented using a matrix representing the board,
     and piece objects. The board is extended out of view for easy collision
-    detection, as such occationally the a submatrix is constructed. 
+    detection, as such occasionally the a submatrix is constructed.
     """
     metadata = {'render.modes': ['human']}
 
@@ -156,11 +157,7 @@ class Tetris(gym.Env):
         self.action_space = spaces.Discrete(7)
         # Observation space contains the board, and an extra row representing the next piece
         self.observation_space = spaces.Box(low=0, high=1, shape=(207, 1), dtype=int)
-        self.current_score = 0
         self.score = 0
-        self.current_lines = 0
-        self.current_height = 0
-        self.number_of_lines = 0
         self.board = self.new_board()
         self.piece = Piece()
         self.next_piece = Piece()
@@ -178,18 +175,17 @@ class Tetris(gym.Env):
         :param action: Action given to environment (tuple)
         :return: None
         """
-        self.piece.x = action[0]
-        self.piece.y = action[1]
-        self.piece.rotation = action[2]
-
+        self.piece.update_pos(action)
         score = self.change_in_score()
         self.score += score
         # Place the current piece, before changing to a new one
         self.place_piece()
         self.clear_lines()
-        self.new_piece()
+        # Change piece
+        self.piece = self.next_piece
+        self.next_piece = Piece()
         actions, Features = self.search_actions_features()
-
+        print(self.board, actions)
         return actions, Features, self.score, not self.valid_position(), {}
 
     def render(self, mode="human"):
@@ -288,7 +284,6 @@ class Tetris(gym.Env):
 
         # Check for collision by summing and checking for 2
         collision_matrix = self.piece.shape + sub_board
-        print(collision_matrix)
         if np.any(collision_matrix > 1):
             return False
         return True
@@ -323,18 +318,6 @@ class Tetris(gym.Env):
         for c in coords:
             self.board[c] = 0
 
-    def new_piece(self):
-        """
-        Registers current piece into board, creates new piece and
-        determines if game over
-        """
-        # Get new piece
-        self.piece = self.next_piece
-        self.next_piece = Piece()
-
-        if self.game_over():
-            self.reset()
-
     # Heuristic calculations
     def change_in_score(self):
         score = 0
@@ -349,7 +332,7 @@ class Tetris(gym.Env):
         elif len(lines) == 4:
             score += 1200
 
-        score += 20 - self.lock_height()  # The AI is assumed to press down instantly, thus triggering the reward
+        score += self.height - self.lock_height()   # We assume that the AI presses down all the way
 
         return score
 
@@ -409,33 +392,6 @@ class Tetris(gym.Env):
         return self.aggregate_height(), self.get_bumpiness(), self.lock_height(), len(
             self.full_rows()), self.change_in_score()
 
-    # The SUPER function
-    def get_possible_actions_and_features(self):
-        """
-        Checks for every possible configuration of the current piece if
-        the piece is in a valid position and if it has been placed
-        returns a list of [states, features]
-        """
-        actions = []
-        Features = []
-        current_piece = (self.piece.x, self.piece.y, self.piece.rotation)
-        for rotation in range(len(self.piece.shapes[self.piece.tetromino])):  # Check every rotation
-            self.piece.rotation = rotation
-            self.piece.shape = self.piece.shapes[self.piece.tetromino][rotation]
-            for x in range(3, self.width + 2):  # Check every potentially valid x value
-                self.piece.x = x
-                for y in range(2, self.height + 1):  # Check every potentially valid y value
-                    self.piece.y = y
-                    if self.valid_position() and self.placed():  # If the position is valid, and piece is placed
-                        # Placing the piece each time makes calculating heuristics simpler
-                        self.place_piece()
-                        actions.append((x, y, rotation))
-                        Features.append(self.get_reward())
-                        self.remove_piece()
-                        # For rendering purposes, the piece must be placed back to its spawn
-        self.piece.x, self.piece.y, self.piece.rotation = current_piece[0], current_piece[1], current_piece[2]
-        return actions, Features
-
     def search_step(self, action):
         if action == 1:
             self.piece.x -= 1  # Move left
@@ -448,6 +404,7 @@ class Tetris(gym.Env):
         elif action == 5:
             self.piece.rotate(False)  # Rotate counter-clockwise
 
+    # Possible states
     def search_actions_features(self):
         """
         Breadth first search, using two lists for the current branches one to loop
@@ -459,9 +416,9 @@ class Tetris(gym.Env):
 
         returns actions and Features lists separately
         """
-        current_pos = self.piece.get_pos(0)
+        current_pos = self.piece.get_pos()
         append_list = [current_pos]
-        visited = [current_pos]
+        visited = set(current_pos)   # The action which lead to a specific position is irrelevant
         actions = []
         Features = []
 
@@ -469,20 +426,27 @@ class Tetris(gym.Env):
             loop_list = append_list  # Set the looping list to the appending list
             append_list = []
             for state in loop_list:
-                for action in range(1, 6):
-                    if action != state[3]:  # No reason to try the previous state
-                        self.search_step(action)
-                        pos = self.piece.get_pos(action)
-                        if pos not in visited and self.valid_position():
-                            print(pos, self.valid_position())
-                            print(self.board)
-                            visited.append(pos)
-                            if self.placed():  # We only want to return the final positions
-                                actions.append(
-                                    pos[:-1])  # Cut out the action when appending to the actions list (ironic)
-                                Features.append(self.get_reward())  # Calculate all the heuristics at this position
-                            else:  #
-                                append_list.append(pos)
-
+                for action in range(1, 6):  # 1 through 5 are valid actions
+                    self.piece.update_pos(state)  # Place the piece in the state from which to explore
+                    if action == 1:
+                        self.piece.x -= 1  # Move left
+                    elif action == 2:
+                        self.piece.x += 1  # Move right
+                    elif action == 3:
+                        self.piece.y += 1  # Move down
+                    elif action == 4:
+                        self.piece.rotate()  # Rotate clockwise
+                    elif action == 5:
+                        self.piece.rotate(False)  # Rotate counter-clockwise
+                    pos = self.piece.get_pos()
+                    if pos not in visited and self.valid_position():
+                        visited.add(pos)    # Ensure that we only explore from this specific state once
+                        if self.placed():  # We only want to return the final positions
+                            print(pos, self.placed())
+                            # actions.append(pos)
+                            actions.append(pos)
+                            Features.append(self.get_reward())  # Calculate all the heuristics at this position
+                        else:   # If not a final position, we should explore from it
+                            append_list.append(pos)
         self.piece.update_pos(current_pos)
         return actions, Features

@@ -39,25 +39,16 @@ class TET:
         """
         current_pos = self.piece.get_pos(0)
         append_list = [current_pos]
+        loop_list = []
         visited = [current_pos]
         actions = []
         Features = []
 
-        while len(append_list) > 0:  # Search through all unique states, where piece is not placed
-            loop_list = append_list   # Set the looping list to the appending list
-            append_list = []
+        while len(append_list) > 0:
+            loop_list = append_list
             for state in loop_list:
-                for action in range(1, 6):
-                    if action != state[3]:  # No reason to try the previous state
-                        search_step(action)
-                        pos = self.piece.get_pos(action)
-                        if pos not in visited and self.valid_position:
-                            visited.append(pos)
-                            if self.placed():   # We only want to return the final positions
-                                actions.append(pos[:-1])    # Cut out the action when appending to the actions list (ironic)
-                                Features.append(self.get_reward())  # Calculate all the heuristics at this position
-                            else:   #
-                                append_list.append(pos)
+
+
 
         return actions, Features
 
