@@ -89,18 +89,55 @@ def sandwiched(x, y):
     
 #print(well_cells())
 
-def full_lines():
-    # Get visual part of board
-    grid = board    
+def holes():
+    """
+    Hole is any empty space below the top full cell on neihbours
+    and current column
+    """
+    holes = 0
+    for x in range(3,13): # Count within visual width
+        # cc = current_column, lc = left_column, rc = right_column
+        lc, cc, rc = board[:, x-1], board[:, x], board[:, x+1]
+        top = np.argmax(cc)
+        
+        # Get relevant columns
+        lc_down = lc[top:] #same height, left and down
+        cc_down = cc[top+1:] # below and down
+        rc_down = rc[top:] # same height, right and down
+        
+        # Revert holes to filled
+        lc_down = negate(lc_down)
+        cc_down = negate(cc_down)
+        rc_down = negate(rc_down)
+        
+        holes += sum(lc_down) + sum(cc_down) + sum(rc_down)
     
-    full_rows = np.sum([r.all() for r in grid])
+    return holes
+
+def negate(arr):
+    # https://stackoverflow.com/questions/56594598/change-1s-to-0-and-0s-to-1-in-numpy-array-without-looping
+    return np.where((arr==0)|(arr==1), arr^1, arr)
+
+
+def top():
+    grid = get_grid()
+    print(grid)
+    top = len(grid)
+    for x in range(len(grid[0])):
+        if not grid[:, x].any():
+            continue
+        column = grid[:, x]
+        y = np.argmax(column)
+        print(x, y)
+        if y < top:
+            top = y
     
-    return full_rows
+    # Convert to board, and subtract max piece range
+    top = top + 2 - 4
+    
+    return max(top, 0)
 
-print(full_lines())
-
-
-
+print("hieghest: {}".format(top()))
 
 def cycle_states(states):
     print("Final: {}".format(states))
@@ -213,7 +250,7 @@ while run:
                 action, action_taken = "right", True
             if event.key == pygame.K_LEFT:
                 action, action_taken = "left", True
-            if event.key == pygame.K_UP:
+            if event.key == pygame.K_UP and env.piece.y > 0:
                 action, action_taken = "up", True
             if event.key == pygame.K_DOWN:
                 action, action_taken = "drop", True
@@ -248,7 +285,9 @@ while run:
         env.step(action)
         
         action_taken = False
-    
+        
+        circles = []
+        print(holes())
         render()
 
 pygame.quit()

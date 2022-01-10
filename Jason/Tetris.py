@@ -131,6 +131,7 @@ class Tetris():
     # Colors and constand dimenstions
     black = (34, 34, 34)
     grey = (184, 184, 184)
+    pygame.font.init()  # init font
     STAT_FONT = pygame.font.SysFont("comicsans", 35)
     screen_size = 600
     cell_size = 25
@@ -296,9 +297,10 @@ class Tetris():
         self.clear_lines()
         
         # Check for game over by overlapping spawn piece
-        return not self.valid_position()
         #if not self.valid_position(): # Add training bool
         #    self.reset()
+        
+        return not self.valid_position()
     
     def new_board(self):
         board = np.zeros([self.height + 2, self.width], dtype = int)
@@ -539,7 +541,7 @@ class Tetris():
             cc_down = cc[top+1:] # below and down
             rc_down = rc[top:] # same height, right and down
             
-            # Revert holes to filled
+            # Revert holes to filled for easy sum
             lc_down = self.negate(lc_down)
             cc_down = self.negate(cc_down)
             rc_down = self.negate(rc_down)
@@ -549,10 +551,11 @@ class Tetris():
         return holes
 
     def negate(self, arr):
+        # Code from stackoverflow.com
         # https://stackoverflow.com/questions/56594598/change-1s-to-0-and-0s-to-1-in-numpy-array-without-looping
         return np.where((arr==0)|(arr==1), arr^1, arr)
     
-    def full_lines(self, board):
+    def full_lines(self, board): 
         # Get visual part of board
         grid = board[2:2 + self.height, 3:3 + self.width]   
         
