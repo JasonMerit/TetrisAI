@@ -17,7 +17,7 @@ MINIBATCH_SIZE = 64
 
 
 class DQN:
-    def __init__(self, env, state_size=5, discount=1, epsilon=1, epsilon_min=0.0001, epsilon_decay=0.9995):
+    def __init__(self, env, state_size=7, discount=1, epsilon=1, epsilon_min=0.0001, epsilon_decay=0.9995):
         self.state_size = state_size
         self.model = self.create_model()
         self.discount = discount
@@ -57,10 +57,7 @@ class DQN:
         Gets an array of features
         returns an array of predictions in the same order
         """
-        predictions = []
-        for feature in features:
-            inp = np.array(feature)
-            predictions.append(self.model.predict(inp))
+        predictions = [self.model.predict(np.array(features))]
         # Each prediction is an array of length 1
         return [predict[0] for predict in predictions]
 
@@ -117,7 +114,7 @@ class DQN:
         steps = 0
 
         for game in range(1, games + 1):
-            print(f'Game: {game} Steps: {steps} AVG Game length: {steps/games}')
+            print(f'Game: {game} Steps: {steps} AVG Game length: {steps/game}')
             if game % save == 0:
                 self.save(f'{name}_{game}')
             actions_list, Features_list, score, done, _ = self.env.reset()

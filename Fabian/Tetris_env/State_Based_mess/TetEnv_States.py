@@ -408,7 +408,6 @@ class Tetris(gym.Env):
         total_transitions = 0
         board = self.board[2:2 + self.height, 2:4 + self.width]
         for index, row in enumerate(board):
-            print(row)
             if row[1:-1].any():
                 previous_square = 1
                 for column in range(len(row)):
@@ -420,7 +419,7 @@ class Tetris(gym.Env):
 
     def get_reward(self):
         return np.array([self.aggregate_height(), self.get_bumpiness(), self.lock_height(), len(
-            self.full_rows()), self.change_in_score()])
+            self.full_rows()), self.change_in_score(), self.row_transitions(), self.column_transitions()])
 
     def search_step(self, action):
         if action == 1:
