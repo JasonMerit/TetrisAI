@@ -151,6 +151,9 @@ class Tetris():
     # Colors
     black = (34, 34, 34)
     grey = (184, 184, 184)
+    pygame.font.init()  # init font
+    TXT_FONT = pygame.font.SysFont("comicsans", 25)
+    STAT_FONT = pygame.font.SysFont("comicsans", 35)
 
     def __init__(self, state=None):
         pygame.init()
@@ -161,6 +164,8 @@ class Tetris():
         self.next_piece = Piece()
         self.shift_piece = None
         self.shifted = False
+        
+        self.pieces_placed = 0
 
         self.screen = pygame.display.set_mode([self.screen_size, self.screen_size])
         pygame.display.set_caption('Tetris')
@@ -250,7 +255,8 @@ class Tetris():
         determines if game over
         :return: None
         """
-
+        self.pieces_placed += 1
+        
         # Find coordinates the current piece inhabits
         indices = np.where(self.piece.shape == 1)
         a, b = indices[0], indices[1]
@@ -268,6 +274,7 @@ class Tetris():
 
         # Check for game over by overlapping spawn piece
         if not self.valid_position(): # Add training bool
+            self.pieces_placed = 0
             self.reset()
 
         self.shifted = False
@@ -333,7 +340,14 @@ class Tetris():
                           self.cell_size, self.cell_size)
                 pygame.draw.rect(self.screen, self.piece.color, square)
 
+        # Draw "pieces placed"
+        label = self.TXT_FONT.render("Pieces Placed",1,(255,255,255))
+        self.screen.blit(label, (self.screen_size - label.get_width() - 25, 120))
 
+        # Draw lines cleared
+        label = self.STAT_FONT.render(str(self.pieces_placed),1,(255,255,255))
+        self.screen.blit(label, (self.screen_size - label.get_width() - 70, 150))
+        
         # Draw next piece
         size = len(self.next_piece.shape[0])
         for i in range(size):

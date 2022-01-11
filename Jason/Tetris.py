@@ -232,31 +232,7 @@ class Tetris():
 
         return bumpiness
 
-    def get_reward(self):
-        reward = 0
-        # reward the change in score
-        reward += self.score - self.current_score
-        # greatly reward a line being cleared
-        reward += (self.number_of_lines - self.current_lines) * 100
-        # penalize a change in height
-        penalty = self.board_height() - self.current_height
-        # only apply the penalty for an increase in height (not a decrease)
-        if penalty > 0:
-            # punish the ai for having a bumpy board only when increasing its height
-            # until I find a smarter way to calculate bumpiness dependent on placing a piece
-            reward -= self.get_bumpiness()
-            reward -= penalty
-        # big penalty for loosing
-        if not self.valid_position():
-            reward -= 20
-        else:
-            reward += 0.01
-        # update the locals
-        self._current_score = self.score
-        self._current_lines = self.number_of_lines
-        self._current_height = self.board_height()
 
-        return reward
 
     def valid_position(self):
         """
@@ -300,8 +276,8 @@ class Tetris():
 
         # Check for game over by overlapping spawn piece
         if not self.valid_position():
-            self.pieces_placed = 0
             if not self.training:
+                self.pieces_placed = 0
                 self.reset()
 
         return not self.valid_position()

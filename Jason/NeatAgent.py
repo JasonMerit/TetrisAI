@@ -64,11 +64,12 @@ def eval_genomes(genomes, config):
             done = env.place_state(best_state)
 
             # Update fitness and remove if done
-            ge[x].fitness = env.pieces_placed
+            ge[x].fitness += 1
             rem[x] = done
-
+        
         # Remove loser envs (rem == 0 - if done = False)
         best_agent = nets[0]
+        print(ge[0].fitness)
         nets = nets[rem == 0]
         envs = envs[rem == 0]
         ge = ge[rem == 0]
