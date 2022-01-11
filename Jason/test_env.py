@@ -47,7 +47,7 @@ def flip():
 if h_flip:
     flip()
 
-env = Tetris(board, False)
+env = Tetris(board, False, False)
 env.set_state((x, y, 0))
 
 def get_grid():
@@ -56,9 +56,9 @@ def get_grid():
 def well_cells():
     """
     Counting the well count by empty cells above their respective full columns
-    sandwiched from sides with full cells. 
-    
-    Start from the second column to first wall (inclusive), 
+    sandwiched from sides with full cells.
+
+    Start from the second column to first wall (inclusive),
     find highest full cell, check sandwich for empty cells left and down,
     """
     well = 0
@@ -69,7 +69,7 @@ def well_cells():
         top_lc = np.argmax(lc)
         if top_lc <= top_c:
             continue
-        
+
         # Iterate down through empty left column and check for sandwich
         y, value = 0, lc[top_c]
         while value != 1:
@@ -85,8 +85,8 @@ def sandwiched(x, y):
     left = env.board[y, x-1]
     right = env.board[y, x+1]
     return left and right
-    
-    
+
+
 #print(well_cells())
 
 def holes():
@@ -99,19 +99,19 @@ def holes():
         # cc = current_column, lc = left_column, rc = right_column
         lc, cc, rc = board[:, x-1], board[:, x], board[:, x+1]
         top = np.argmax(cc)
-        
+
         # Get relevant columns
         lc_down = lc[top:] #same height, left and down
         cc_down = cc[top+1:] # below and down
         rc_down = rc[top:] # same height, right and down
-        
+
         # Revert holes to filled
         lc_down = negate(lc_down)
         cc_down = negate(cc_down)
         rc_down = negate(rc_down)
-        
+
         holes += sum(lc_down) + sum(cc_down) + sum(rc_down)
-    
+
     return holes
 
 def negate(arr):
@@ -131,12 +131,12 @@ def top():
         print(x, y)
         if y < top:
             top = y
-    
+
     # Convert to board, and subtract piece range
     is_long_bar = env.piece.tetromino == 6
     top += 2
     top -= 4 if is_long_bar else 3
-    
+
     return max(top, 0 if is_long_bar else 1)
 
 print("hieghest: {}".format(top()))
@@ -171,10 +171,10 @@ screen = pygame.display.set_mode([screen_size, screen_size])
 pygame.display.set_caption('Tetris')
 background = pygame.Surface(screen.get_size())
 
-        
+
 def render():
     screen.fill(black)
-    
+
     # Get and draw grid
     grid = get_grid()
     background = (top_left_x - 1,
@@ -182,8 +182,8 @@ def render():
                   width * cell_size + 1,
                   height * cell_size + 1)
     pygame.draw.rect(screen, grey, background)
-    
-    
+
+
     for i in range(width):
         for j in range(height):
             val = grid[j, i]
@@ -192,7 +192,7 @@ def render():
                       top_left_y + cell_size * j,
                       cell_size - 1, cell_size - 1)
             pygame.draw.rect(screen, color, square)
-    
+
     # Draw piece
     size = len(env.piece.shape[0])
     for i in range(size):
@@ -203,33 +203,37 @@ def render():
                       top_left_y + cell_size * (env.piece.y + i - 2),
                       cell_size, cell_size)
             pygame.draw.rect(screen, env.piece.color, square)
-    
+
+    # Draw "pieces placed"
+    score_label = AXIS_FONT.render("Pieces Placed",1,(255,255,255))
+    screen.blit(score_label, (screen_size - score_label.get_width() - 25, 120))
+
     # Draw lines cleared
-    score_label = STAT_FONT.render("Score: " + str(env.pieces_placed),1,(255,255,255))
-    screen.blit(score_label, (screen_size - score_label.get_width() - 15, 150))
-    
+    score_label = STAT_FONT.render(str(env.pieces_placed),1,(255,255,255))
+    screen.blit(score_label, (screen_size - score_label.get_width() - 70, 150))
+
     # Draw position
-    center = (top_left_x + cell_size*(env.piece.x-2.5), 
+    center = (top_left_x + cell_size*(env.piece.x-2.5),
               top_left_y + cell_size*(env.piece.y-1.5))
     pygame.draw.circle(screen, (255,255,255), center, 8)
-    
+
     # Draw circles
     for x, y in circles:
         center = (top_left_x + cell_size*(x-2.5), top_left_y + cell_size*(y-1.5))
         pygame.draw.circle(screen, grey, center, 8)
-    
+
     # Draw axis
     for y in range(height):
         string = AXIS_FONT.render(str(y+2),1,(255,255,255))
-        screen.blit(string, (top_left_x - string.get_width() - 10, 
+        screen.blit(string, (top_left_x - string.get_width() - 10,
                              top_left_y+cell_size*y))
     for x in range(width):
         string = AXIS_FONT.render(str(x+3),1,(255,255,255))
-        screen.blit(string, (top_left_x + x*cell_size + 4, 
+        screen.blit(string, (top_left_x + x*cell_size + 4,
                              top_left_y + height*cell_size))
-      
+
     pygame.display.flip()
-    
+
 
 
 render()
@@ -267,7 +271,8 @@ while run:
             elif event.key == pygame.K_r:
                 env.reset()
             elif event.key == pygame.K_t: # TEST HERE
-                pass
+                states = env.get_final_states()
+                cycle_states(states)
             elif event.key == pygame.K_p:
                 pause = True
                 while pause:
@@ -285,15 +290,11 @@ while run:
 
     if action_taken:
         env.step(action)
-        
+
         action_taken = False
-        
+
         circles = []
         print(holes())
         render()
 
 pygame.quit()
-
-
-
-        

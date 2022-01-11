@@ -98,8 +98,8 @@ class Piece():
         # Spawn position depends on tetromino
         self.y = 1 if self.tetromino < 6 else 0
         self.x = 7 if self.tetromino < 5 else 6
-        
-        
+
+
 
     def rotate(self, clockwise=True):
         """
@@ -133,12 +133,12 @@ def new_board():
 
 class Tetris():
     """
-    Tetris class acting as enviroment. 
+    Tetris class acting as enviroment.
     The game data is represented using a matrix representing the board,
     and piece objects. The board is extended out of view for easy collision
-    detection, as such occationally the a submatrix is constructed. 
+    detection, as such occationally the a submatrix is constructed.
     """
-    
+
     # Rendering Dimensions
     screen_size = 600
     cell_size = 25
@@ -161,7 +161,7 @@ class Tetris():
         self.next_piece = Piece()
         self.shift_piece = None
         self.shifted = False
-        
+
         self.screen = pygame.display.set_mode([self.screen_size, self.screen_size])
         pygame.display.set_caption('Tetris')
         self.background = pygame.Surface(self.screen.get_size())
@@ -243,14 +243,14 @@ class Tetris():
         if not self.valid_position():
             self.piece.y -= 1
             self.new_piece()
-            
+
     def new_piece(self):
         """
-        Registers current piece into board, creates new piece and 
+        Registers current piece into board, creates new piece and
         determines if game over
         :return: None
         """
-        
+
         # Find coordinates the current piece inhabits
         indices = np.where(self.piece.shape == 1)
         a, b = indices[0], indices[1]
@@ -259,19 +259,19 @@ class Tetris():
 
         # Change the board accordingly
         for c in coords:
-            self.board[c] = 1        
+            self.board[c] = 1
 
         # Get new piece and clear possible lines
         self.piece = self.next_piece
         self.next_piece = Piece()
         self.clear_lines()
-        
+
         # Check for game over by overlapping spawn piece
         if not self.valid_position(): # Add training bool
             self.reset()
-        
+
         self.shifted = False
-    
+
     def clear_lines(self):
         """
         Check and clear lines if rows are full
@@ -280,21 +280,21 @@ class Tetris():
         # Get visual part of board
         grid = self.board[2:22, 3:13]
         idx = np.array([], dtype=int)
-        
+
         # Find complete rows in reverse order
         for r in reversed(range(len(grid))):  # Count rows to remove in reverse order
             if grid[r].all():
                 idx = np.append(idx, r)
-        
+
         # Now clear the rows
         for c in idx:
             grid = np.delete(grid, c, 0)  # Remove the cleared row
             grid = np.vstack((np.zeros(10), grid))  # Add an empty row on top
             idx += 1  # Shift remaining clear rows a line down
-        
+
         # Add final result to board
         self.board[2:22, 3:13] = grid
-    
+
 
     def render(self):
         """
@@ -332,8 +332,8 @@ class Tetris():
                           self.top_left_y + self.cell_size * (self.piece.y + i - 2),
                           self.cell_size, self.cell_size)
                 pygame.draw.rect(self.screen, self.piece.color, square)
-        
-        
+
+
         # Draw next piece
         size = len(self.next_piece.shape[0])
         for i in range(size):
@@ -344,7 +344,7 @@ class Tetris():
                           100 + self.cell_size * i,
                           self.cell_size, self.cell_size)
                 pygame.draw.rect(self.screen, self.next_piece.color, square)
-        
+
         # Draw shift_piece
         if self.shift_piece:
             size = len(self.shift_piece.shape[0])
@@ -356,7 +356,7 @@ class Tetris():
                               100 + self.cell_size * i,
                               self.cell_size, self.cell_size)
                     pygame.draw.rect(self.screen, self.shift_piece.color, square)
-        
+
 
         # text = self.scorefont.render("{:}".format(self.score), True, (0,0,0))
         # self.screen.blit(text, (790-text.get_width(), 10))
@@ -487,5 +487,3 @@ while run:
         env.render()
 
 env.close()
-
-

@@ -30,56 +30,51 @@ def eval_genomes(genomes, config):
     nets = []
     envs = []
     ge = []
-    
-    for _, genome in genomes:            
+
+    for _, genome in genomes:
         genome.fitness = 0  # start with fitness level of 0
         net = neat.nn.FeedForwardNetwork.create(genome, config)
         nets.append(net)
-        envs.append(Tetris([], False))
+        envs.append(Tetris([], True, False))
         ge.append(genome)
-    
+
     nets = np.array(nets)
     envs = np.array(envs)
     ge = np.array(ge)
-    
+
     # Run the simulation until all agents are dead
     rem = np.empty(len(envs))
     best_agent = None
     while len(envs) > 0:
         # Have each env take a step, by seeking all final states,
         # evaluating them all, inputting into NN and placing best state
-        
+
         # Iterate through each agent
         for x, env in enumerate(envs):
-            # Find all final_states and input into NN
+            # Find all final_states and evaluate them
             states = env.get_final_states()
-            inputs = env.get_evaluations(states)
+            evaluations = env.get_evaluations(states)
             
-            #outputs = [nets[x].activate(input) for input in inputs]
-            
-            outputs = []
-            for input in inputs:
-                output = nets[x].activate(input)
-                outputs.append(output)
-            
+            # Pass the evaluation for each state into the NN
+            outputs = [nets[x].activate(input) for input in evaluations]
+
             # Go to best scored state
-            best_index = output.index(max(output))
+            best_index = outputs.index(max(outputs))
             best_state = states[best_index]
             done = env.place_state(best_state)
-            
+
             # Update fitness and remove if done
             ge[x].fitness = env.pieces_placed
             rem[x] = done
-            
-        # Remove loser envs
-        # Assumes last longing is best
+
+        # Remove loser envs (rem == 0 - if done = False)
         best_agent = nets[0]
         nets = nets[rem == 0]
         envs = envs[rem == 0]
         ge = ge[rem == 0]
-        
+
         rem = np.empty(len(envs))
-        
+
     pickle.dump(best_agent, open("best.pickle", "wb"))
 
 def run(config_file):
@@ -102,7 +97,7 @@ def run(config_file):
     #p.add_reporter(neat.Checkpointer(5))
 
     # Run and indefinite amount of generations.
-    winner = p.run(eval_genomes)
+    winner = p.run(eval_genomes, 1)
 
     # show final stats
     print('\nBest genome:\n{!s}'.format(winner))
