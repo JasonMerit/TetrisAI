@@ -4,12 +4,12 @@ Created on Wed Jan  5 13:04:52 2022
 
 @author: Jason
 """
-import pygame
-import random
+
+
 import os
 from Tetris import Tetris
 import numpy as np
-import time
+
 import neat
 import pickle
 
@@ -27,43 +27,60 @@ def eval_genomes(genomes, config):
     # start by creating lists holding the genome itself, the
     # neural network associated with the genome and the
     # environment that uses that network to play
-    nets = np.array([])
-    envs = np.array([])
-    ge = np.array([])
+    nets = []
+    envs = []
+    ge = []
     
     for _, genome in genomes:            
         genome.fitness = 0  # start with fitness level of 0
         net = neat.nn.FeedForwardNetwork.create(genome, config)
-        nets = np.append(nets, net)
-        envs = np.append(envs, Tetris(False))
-        ge = np.append(ge, genome)
-        
+        nets.append(net)
+        envs.append(Tetris([], False))
+        ge.append(genome)
+    
+    nets = np.array(nets)
+    envs = np.array(envs)
+    ge = np.array(ge)
+    
+    # Run the simulation until all agents are dead
     rem = np.empty(len(envs))
     best_agent = None
     while len(envs) > 0:
-        # Have each env take a step
-        for x, env in enumerate(envs):
-            # Insert loop for each possible placed state and go from features
-            input = tuple(env.get_state())
-            output = nets[x].activate(input) # Returns a tuple of best action estimation
-            action = output.index(max(output)) # Take max estimated action
-            reward, done = env.step(action)
-            env.drop()
-            
-            # Update relevant sizes
-            ge[x].fitness += reward
-            rem[x] = done
+        # Have each env take a step, by seeking all final states,
+        # evaluating them all, inputting into NN and placing best state
         
+        # Iterate through each agent
+        for x, env in enumerate(envs):
+            # Find all final_states and input into NN
+            states = env.get_final_states()
+            inputs = env.get_evaluations(states)
+            
+            #outputs = [nets[x].activate(input) for input in inputs]
+            
+            outputs = []
+            for input in inputs:
+                output = nets[x].activate(input)
+                outputs.append(output)
+            
+            # Go to best scored state
+            best_index = output.index(max(output))
+            best_state = states[best_index]
+            done = env.place_state(best_state)
+            
+            # Update fitness and remove if done
+            ge[x].fitness = env.pieces_placed
+            rem[x] = done
+            
         # Remove loser envs
+        # Assumes last longing is best
         best_agent = nets[0]
         nets = nets[rem == 0]
         envs = envs[rem == 0]
         ge = ge[rem == 0]
         
-        num_agents_left = len(envs)
-        rem = np.empty(num_agents_left)
+        rem = np.empty(len(envs))
         
-    pickle.dump(best_agent,open("best.pickle", "wb"))
+    pickle.dump(best_agent, open("best.pickle", "wb"))
 
 def run(config_file):
     """
@@ -84,8 +101,8 @@ def run(config_file):
     p.add_reporter(stats)
     #p.add_reporter(neat.Checkpointer(5))
 
-    # Run for up to 50 generations.
-    winner = p.run(eval_genomes, 50)
+    # Run and indefinite amount of generations.
+    winner = p.run(eval_genomes)
 
     # show final stats
     print('\nBest genome:\n{!s}'.format(winner))

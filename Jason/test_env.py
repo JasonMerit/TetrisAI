@@ -4,7 +4,7 @@ TestingEnvironment. Draw and manipulate board to see how environment
 responds. All rendering is done from this script.
 """
 import numpy as np
-from FreePlayTetris import Tetris
+from Tetris import Tetris
 import pygame
 import os
 os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (40,40)
@@ -48,7 +48,7 @@ if h_flip:
     flip()
 
 env = Tetris(board, False)
-env.piece.set((x, y, 0))
+env.set_state((x, y, 0))
 
 def get_grid():
     return env.board[2:2 + height, 3:3 + width]
@@ -97,7 +97,7 @@ def holes():
     holes = 0
     for x in range(3,13): # Count within visual width
         # cc = current_column, lc = left_column, rc = right_column
-        lc, cc, rc = env.board[:, x-1], env.board[:, x], env.board[:, x+1]
+        lc, cc, rc = board[:, x-1], board[:, x], board[:, x+1]
         top = np.argmax(cc)
         
         # Get relevant columns
@@ -110,9 +110,7 @@ def holes():
         cc_down = negate(cc_down)
         rc_down = negate(rc_down)
         
-        h_flips = sum(lc_down) + sum(cc_down) + sum(rc_down)
-        holes += h_flips
-        # print("[{}] holes: {}  ".format(x-1, h_flips))
+        holes += sum(lc_down) + sum(cc_down) + sum(rc_down)
     
     return holes
 
@@ -120,7 +118,28 @@ def negate(arr):
     # https://stackoverflow.com/questions/56594598/change-1s-to-0-and-0s-to-1-in-numpy-array-without-looping
     return np.where((arr==0)|(arr==1), arr^1, arr)
 
-# print(holes())
+
+def top():
+    grid = get_grid()
+    print(grid)
+    top = len(grid)
+    for x in range(len(grid[0])):
+        if not grid[:, x].any():
+            continue
+        column = grid[:, x]
+        y = np.argmax(column)
+        print(x, y)
+        if y < top:
+            top = y
+    
+    # Convert to board, and subtract piece range
+    is_long_bar = env.piece.tetromino == 6
+    top += 2
+    top -= 4 if is_long_bar else 3
+    
+    return max(top, 0 if is_long_bar else 1)
+
+print("hieghest: {}".format(top()))
 
 def cycle_states(states):
     print("Final: {}".format(states))
@@ -128,31 +147,32 @@ def cycle_states(states):
     starting_state = env.get_state()
     for state in states:
         print(state)
-        env.piece.set(state)
+        env.set_state(state)
         render()
         clock.tick(1)
-        env.piece.set(starting_state)
+        env.set_state(starting_state)
         render()
         clock.tick(10)
     env.set_state(starting_state)
-    
+
+screen_size = 600
+black = (34, 34, 34)
+grey = (184, 184, 184)
+cell_size = 25
+top_left_y = screen_size / 2 - height * cell_size / 2
+top_left_x = screen_size / 2 - width * cell_size / 2
+
+pygame.font.init()  # init font
+STAT_FONT = pygame.font.SysFont("comicsans", 35)
+AXIS_FONT = pygame.font.SysFont("comicsans", 20)
+
+
+screen = pygame.display.set_mode([screen_size, screen_size])
+pygame.display.set_caption('Tetris')
+background = pygame.Surface(screen.get_size())
+
         
 def render():
-    screen_size = 600
-    black = (34, 34, 34)
-    grey = (184, 184, 184)
-    cell_size = 25
-    top_left_y = screen_size / 2 - height * cell_size / 2
-    top_left_x = screen_size / 2 - width * cell_size / 2
-    
-    pygame.font.init()  # init font
-    STAT_FONT = pygame.font.SysFont("comicsans", 20)
-    
-    
-    screen = pygame.display.set_mode([screen_size, screen_size])
-    pygame.display.set_caption('Tetris')
-    background = pygame.Surface(screen.get_size())
-    
     screen.fill(black)
     
     # Get and draw grid
@@ -184,6 +204,10 @@ def render():
                       cell_size, cell_size)
             pygame.draw.rect(screen, env.piece.color, square)
     
+    # Draw lines cleared
+    score_label = STAT_FONT.render("Score: " + str(env.pieces_placed),1,(255,255,255))
+    screen.blit(score_label, (screen_size - score_label.get_width() - 15, 150))
+    
     # Draw position
     center = (top_left_x + cell_size*(env.piece.x-2.5), 
               top_left_y + cell_size*(env.piece.y-1.5))
@@ -196,11 +220,11 @@ def render():
     
     # Draw axis
     for y in range(height):
-        string = STAT_FONT.render(str(y+2),1,(255,255,255))
+        string = AXIS_FONT.render(str(y+2),1,(255,255,255))
         screen.blit(string, (top_left_x - string.get_width() - 10, 
                              top_left_y+cell_size*y))
     for x in range(width):
-        string = STAT_FONT.render(str(x+3),1,(255,255,255))
+        string = AXIS_FONT.render(str(x+3),1,(255,255,255))
         screen.blit(string, (top_left_x + x*cell_size + 4, 
                              top_left_y + height*cell_size))
       
@@ -228,7 +252,7 @@ while run:
                 action, action_taken = "right", True
             if event.key == pygame.K_LEFT:
                 action, action_taken = "left", True
-            if event.key == pygame.K_UP:
+            if event.key == pygame.K_UP and env.piece.y > 0:
                 action, action_taken = "up", True
             if event.key == pygame.K_DOWN:
                 action, action_taken = "drop", True
@@ -242,9 +266,8 @@ while run:
                 action, action_taken = "change", True
             elif event.key == pygame.K_r:
                 env.reset()
-            elif event.key == pygame.K_t:
-                states = env.get_final_states()
-                cycle_states(states)
+            elif event.key == pygame.K_t: # TEST HERE
+                pass
             elif event.key == pygame.K_p:
                 pause = True
                 while pause:
@@ -264,7 +287,9 @@ while run:
         env.step(action)
         
         action_taken = False
-    
+        
+        circles = []
+        print(holes())
         render()
 
 pygame.quit()
