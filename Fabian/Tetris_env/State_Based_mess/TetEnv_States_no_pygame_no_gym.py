@@ -1,8 +1,5 @@
-import pygame
 import numpy as np
 import random
-import gym
-from gym import spaces
 
 
 class Piece:
@@ -129,7 +126,7 @@ class Piece:
 
 
 # noinspection PyTypeChecker
-class Tetris(gym.Env):
+class Tetris:
     """
     Tetris class acting as environment.
     The game data is represented using a matrix representing the board,
@@ -151,18 +148,7 @@ class Tetris(gym.Env):
     black = (34, 34, 34)
     grey = (184, 184, 184)
 
-    def __init__(self, rendering=False):
-        # Stop Pygame from opening a window every time this class is initialized
-        self.rendering = rendering
-        if rendering:
-            pygame.init()
-            self.screen = pygame.display.set_mode([self.screen_size, self.screen_size])
-            pygame.display.set_caption('Tetris')
-            self.background = pygame.Surface(self.screen.get_size())
-        # Following is left is for potential compatibility with Open AI Gym:
-        super(Tetris, self).__init__()
-        self.action_space = spaces.Discrete(7)
-        self.observation_space = spaces.Box(low=0, high=1, shape=(207, 1), dtype=int)
+    def __init__(self):
         # Initialize board state
         self.score = 0
         self.board = self.new_board()
@@ -194,45 +180,6 @@ class Tetris(gym.Env):
 
         return actions, Features, self.score, game_over, {}
 
-    def render(self, mode="human"):
-        # Do not run this function if not rendering, it may cause a crash
-        if not self.rendering:
-            print('Rendering is off for this instance of the class.')
-            return
-        # Clear the screen
-        self.screen.fill(self.black)
-
-        # Get and draw grid
-        grid = self.get_grid()
-        background = (self.top_left_x - 1,
-                      self.top_left_y - 1,
-                      self.width * self.cell_size + 1,
-                      self.height * self.cell_size + 1)
-        pygame.draw.rect(self.screen, self.grey, background)
-
-        for i in range(self.width):
-            for j in range(self.height):
-                val = grid[j, i]
-                color = self.grey if val != 0 else self.black
-                square = (self.top_left_x + self.cell_size * i,
-                          self.top_left_y + self.cell_size * j,
-                          self.cell_size - 1, self.cell_size - 1)
-                pygame.draw.rect(self.screen, color, square)
-
-        # Draw piece
-        size = len(self.piece.shape[0])
-        for i in range(size):
-            for j in range(size):
-                if self.piece.shape[i, j] == 0:
-                    continue
-                square = (self.top_left_x + self.cell_size * (self.piece.x + j - 3),  # POSITION HERE
-                          self.top_left_y + self.cell_size * (self.piece.y + i - 2),
-                          self.cell_size, self.cell_size)
-                pygame.draw.rect(self.screen, self.piece.color, square)
-
-        # Display
-        pygame.display.flip()
-
     def reset(self):
         """
         Resets game by creating new board and pieces
@@ -248,13 +195,6 @@ class Tetris(gym.Env):
         if len(actions) == 0:
             game_over = True
         return actions, Features, self.score, game_over, {}
-
-    def close(self):
-        """
-        Close down the game
-        :return: None
-        """
-        pygame.quit()
 
     # Grid/Board functions
     def get_grid(self):

@@ -8,7 +8,7 @@ clock = pygame.time.Clock()
 
 env = Tetris(rendering=True)
 agent = DQN(env=env)
-agent.load('FIRST_TRY_500')
+agent.load('FIRST_TRY_10000')
 actions, Features, score, done, _ = env.reset()
 run = True
 while run:

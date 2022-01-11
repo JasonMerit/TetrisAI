@@ -12,7 +12,7 @@ LOG_DIR = os.path.join(CWD + 'LOGS')
 
 MAX_BUFFER_LENGTH = 100_000
 REPLAY_MEMORY_SIZE = 50_000
-MIN_REPLAY_MEMORY_SIZE = 512
+MIN_REPLAY_MEMORY_SIZE = 65
 MINIBATCH_SIZE = 64
 
 
@@ -57,9 +57,9 @@ class DQN:
         Gets an array of features
         returns an array of predictions in the same order
         """
-        predictions = [self.model.predict(np.array(features))]
+        predictions = self.model.predict(np.array(features))
         # Each prediction is an array of length 1
-        return [predict[0] for predict in predictions]
+        return [predict for predict in predictions]
 
     def take_action(self, actions, Features):
         """
@@ -74,7 +74,6 @@ class DQN:
         max_rating = None
         best_action = None
         best_Features = None
-
         # pass the features to the model in an array
         ratings = self.predict_ratings(Features)
 
@@ -88,18 +87,12 @@ class DQN:
         return best_action, best_Features
 
     def load(self, model_name):
-        # file_path = os.path.join(WEIGHT_PATH + '\\' + model_name)
-        # if Path(file_path).is_file():
-        #    self.model.load_weights(file_path)
-        # else:
-        #    print('No model loaded, file not recognised')
         try:
             self.model.load_weights(model_name)
         except OSError:
             print('Model not found.')
 
     def save(self, model_name):
-        # file_path = os.path.join(WEIGHT_PATH + '\\' + model_name)
         self.model.save_weights(model_name)
 
     def train(self, games=1000, save=1000, name='DQN'):
@@ -114,13 +107,15 @@ class DQN:
         steps = 0
 
         for game in range(1, games + 1):
-            print(f'Game: {game} Steps: {steps} AVG Game length: {steps/game}')
+            if game % 50 == 0:
+                print(f'Game: {game} Steps: {steps} AVG Game length: {steps/game}')
             if game % save == 0:
                 self.save(f'{name}_{game}')
             actions_list, Features_list, score, done, _ = self.env.reset()
             current_features = np.zeros(len(Features_list[0]), dtype=np.int64)  # set the Features from a new game arbitrarily
             current_score = 0
             while not done:
+                self.env.render()
                 steps += 1
                 action, future_features = self.take_action(actions_list, Features_list)
                 actions_list, Features_list, score, done, _ = self.env.step(np.array(action))
@@ -149,7 +144,7 @@ class DQN:
         X = []
         Y = []
 
-        for index, (current_features, score, done, future_features) in enumerate(minibatch):
+        for i, (current_features, score, done, future_features) in enumerate(minibatch):
             if not done:
                 rating = self.model.predict(future_features.reshape(-1, self.state_size))
                 new_q = score + rating[0][0] * self.epsilon_decay
