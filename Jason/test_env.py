@@ -132,10 +132,12 @@ def top():
         if y < top:
             top = y
     
-    # Convert to board, and subtract max piece range
-    top = top + 2 - 4
+    # Convert to board, and subtract piece range
+    is_long_bar = env.piece.tetromino == 6
+    top += 2
+    top -= 4 if is_long_bar else 3
     
-    return max(top, 0)
+    return max(top, 0 if is_long_bar else 1)
 
 print("hieghest: {}".format(top()))
 

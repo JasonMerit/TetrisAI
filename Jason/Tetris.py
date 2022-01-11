@@ -588,7 +588,64 @@ class Tetris():
         
         evaluations = [self.evaluate(state) for state in states]
         return evaluations
+    
+    def get_top(self):
+        grid = self.get_grid()
+        top = len(grid)
         
+        for x in range(len(grid[0])):
+            if not grid[:, x].any():
+                continue
+            column = grid[:, x]
+            y = np.argmax(column)
+            print(x, y)
+            if y < top:
+                top = y
+        
+        # Convert to board, and subtract piece range
+        is_long_bar = self.piece.tetromino == 6
+        top += 2
+        top -= 4 if is_long_bar else 3
+        
+        return max(top, 0 if is_long_bar else 1)
+        
+    
+    def search_actions_features(self):
+        """
+        Breadth first search, using two lists for the current branches one to loop
+        through and one to append to, one list for all the valid states visited
+        to prevent a case of two steps forward and two steps back infinite looping.
+        If a valid position where the piece is placed is found, its coordinates
+        and rotation are appended to the actions list, and its features are appended
+        to the Features list.
+
+        returns actions and Features lists separately
+        """
+        current_pos = self.piece.get_pos()
+        append_list = [current_pos]
+        visited = set(current_pos)   # The action which lead to a specific position is irrelevant
+        actions = []
+        Features = []
+
+        while len(append_list) > 0:  # Search through all unique states, where piece is not placed
+            loop_list = append_list  # Set the looping list to the appending list
+            append_list = []
+            for state in loop_list:
+                for action in range(1, 6):  # 1 through 5 are valid actions
+                    self.piece.update_pos(state)  # Place the piece in the state from which to explore
+                    self.search_step(action)
+                    pos = self.piece.get_pos()
+                    if pos not in visited and self.valid_position():
+                        visited.add(pos)    # Ensure that we only explore from this specific state once
+                        if self.placed():  # We only want to return the final positions
+                            print(pos, self.placed())
+                            # actions.append(pos)
+                            actions.append(pos)
+                            Features.append(self.get_reward())  # Calculate all the heuristics at this position
+                        else:   # If not a final position, we should explore from it
+                            append_list.append(pos)
+        self.piece.update_pos(current_pos)
+        return actions, Features
         
         
         
