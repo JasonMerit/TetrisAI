@@ -154,6 +154,7 @@ class Tetris():
         self.next_piece = Piece()
 
         self.pieces_placed = 0
+        self.highscore = 0
 
         self.current_score = 0
         self.score = 0
@@ -277,6 +278,8 @@ class Tetris():
         # Check for game over by overlapping spawn piece
         if not self.valid_position():
             if not self.training:
+                if self.pieces_placed  > self.highscore:
+                    self.highscore = self.pieces_placed
                 self.pieces_placed = 0
                 self.reset()
 
@@ -575,34 +578,42 @@ class Tetris():
         # Get visual part of board
         grid = board[2:2 + self.height, 3:3 + self.width]
 
-        full_rows = np.sum([r.all() for r in grid])
+        full_lines = np.sum([r.all() for r in grid])
 
-        return full_rows
-
-
-    def evaluate(self, state):
+        return full_lines
+    
+    def bumpiness(self, board):
         """
-        Return the score of all heuristics compiled into a tuple
-        :param: state to be evaluated (Tuple)
-        :return: Tuple (length decides number of inputs in agent)
+        Bumpiness: The difference in heights between neighbouring columns
         """
-        self.set_state(state)
-        board = self.get_placed_board()
+        grid =  board[2:2 + self.height + 1, 3:3 + self.width] # Keep one floor
+        
+        bumpiness = 0
+        for x in range(self.width-1):
+            bumpiness += abs(grid[:, x].argmax() - grid[:, x + 1].argmax())
+            
+        return bumpiness
 
-        holes = self.holes(board)
-        full_lines = self.full_lines(board)
-
-
-        return (holes, full_lines)
 
     def get_evaluations(self, states):
         """
-        Return evaluations of given states
+        Return evaluations in regards to heuristcs of given states
         :param: states to be evaluated (List)
         :return: List
         """
+        evaluations = []
+        
+        for state in states:
+            self.set_state(state)
+            board = self.get_placed_board()
 
-        evaluations = [self.evaluate(state) for state in states]
+            holes = self.holes(board)
+            full_lines = self.full_lines(board)
+            placing_height = state[1]
+            bumpiness = self.bumpiness(board)
+            
+            evaluations.append((holes, full_lines, placing_height, bumpiness))
+        
         return evaluations
 
     

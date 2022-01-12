@@ -12,6 +12,7 @@ import numpy as np
 
 import neat
 import pickle
+import visualize
 
 
 gen = 0
@@ -69,7 +70,6 @@ def eval_genomes(genomes, config):
         
         # Remove loser envs (rem == 0 - if done = False)
         best_agent = nets[0]
-        print(ge[0].fitness)
         nets = nets[rem == 0]
         envs = envs[rem == 0]
         ge = ge[rem == 0]
@@ -77,6 +77,7 @@ def eval_genomes(genomes, config):
         rem = np.empty(len(envs))
 
     pickle.dump(best_agent, open("best.pickle", "wb"))
+    
 
 def run(config_file):
     """
@@ -98,10 +99,15 @@ def run(config_file):
     #p.add_reporter(neat.Checkpointer(5))
 
     # Run and indefinite amount of generations.
-    winner = p.run(eval_genomes, 1)
+    winner = p.run(eval_genomes)
 
     # show final stats
     print('\nBest genome:\n{!s}'.format(winner))
+    visualize.draw_net(config, winner, True)
+    visualize.plot_stats(stats, ylog=False, view=True)
+    visualize.plot_species(stats, view=True)
+    
+    
 
 
 if __name__ == '__main__':

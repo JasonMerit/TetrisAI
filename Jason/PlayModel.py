@@ -71,6 +71,14 @@ def render():
     # Draw lines cleared
     score_label = STAT_FONT.render(str(env.pieces_placed),1,(255,255,255))
     screen.blit(score_label, (screen_size - score_label.get_width() - 70, 150))
+    
+    # Draw "Highscore"
+    score_label = AXIS_FONT.render("Highscore",1,(255,255,255))
+    screen.blit(score_label, (screen_size - score_label.get_width() - 35, 50))
+    
+    # Draw highscore
+    score_label = STAT_FONT.render(str(env.highscore),1,(255,255,255))
+    screen.blit(score_label, (screen_size - score_label.get_width() - 70, 80))
 
     pygame.display.flip()
 
