@@ -12,7 +12,7 @@ import numpy as np
 
 import neat
 import pickle
-import visualize
+#import visualize
 
 
 gen = 0
@@ -78,6 +78,9 @@ def eval_genomes(genomes, config):
 
     pickle.dump(best_agent, open("best.pickle", "wb"))
     
+    if gen % 100 == 0: # Save milestones
+        pickle.dump(best_agent, open("best.pickle_{}".format(gen), "wb"))    
+    
 
 def run(config_file):
     """
@@ -103,9 +106,9 @@ def run(config_file):
 
     # show final stats
     print('\nBest genome:\n{!s}'.format(winner))
-    visualize.draw_net(config, winner, True)
-    visualize.plot_stats(stats, ylog=False, view=True)
-    visualize.plot_species(stats, view=True)
+    #visualize.draw_net(config, winner, True)
+    #visualize.plot_stats(stats, ylog=False, view=True)
+    #visualize.plot_species(stats, view=True)
     
     
 

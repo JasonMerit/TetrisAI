@@ -175,6 +175,8 @@ class Tetris(gym.Env):
         self.next_piece = Piece()
         self.shifted = False
         
+        self.pieces_placed = 0
+        self.highscore = 0
         
 
     # Functions for interaction with environment
@@ -190,6 +192,7 @@ class Tetris(gym.Env):
         self.score += score
         # Place the current piece, before changing to a new one
         self.place_piece()
+        self.placed_pieces += 1
         self.clear_lines()
         # Change piece
         self.piece = self.next_piece
@@ -197,6 +200,7 @@ class Tetris(gym.Env):
         actions, Features = self.search_actions_features()
         game_over = False
         if len(actions) < 1 or not self.valid_position():
+            self.highscore = max(self.highscore, self.placed_pieces)                
             game_over = True
 
         return actions, Features, self.score, game_over, {}
@@ -238,7 +242,7 @@ class Tetris(gym.Env):
                 pygame.draw.rect(self.screen, self.piece.color, square)
         
         # Draw "pieces placed"
-        score_label = self.AXIS_FONT.render("Pieces Placed",1,(255,255,255))
+        score_label = self.TXT_FONT.render("Pieces Placed",1,(255,255,255))
         self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 25, 150))
 
         # Draw lines cleared
@@ -246,7 +250,7 @@ class Tetris(gym.Env):
         self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 70, 180))
         
         # Draw "Highscore"
-        score_label = self.AXIS_FONT.render("Highscore",1,(255,255,255))
+        score_label = self.TXT_FONT.render("Highscore",1,(255,255,255))
         self.screen.blit(score_label, (self.screen_size - self.score_label.get_width() - 40, 50))
         
         # Draw highscore
