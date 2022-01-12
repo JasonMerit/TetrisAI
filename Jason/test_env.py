@@ -139,14 +139,11 @@ def top():
 
     return max(top, 0 if is_long_bar else 1)
 
-print("hieghest: {}".format(top()))
+
 
 def cycle_states(states):
-    print("Final: {}".format(states))
-    print("")
     starting_state = env.get_state()
     for state in states:
-        print(state)
         env.set_state(state)
         render()
         clock.tick(1)
@@ -154,6 +151,21 @@ def cycle_states(states):
         render()
         clock.tick(10)
     env.set_state(starting_state)
+
+def bumpiness():
+    """
+    Bumpiness: The difference in heights between neighbouring columns
+    """
+    grid =  env.board[2:2 + height + 1, 3:3 + width] # Keep one floor
+    
+    bumpiness = 0
+    for x in range(width-1):
+        bumpiness += abs(grid[:, x].argmax() - grid[:, x + 1].argmax())
+        
+    return bumpiness
+
+print(bumpiness())
+    
 
 screen_size = 600
 black = (34, 34, 34)
@@ -293,8 +305,6 @@ while run:
 
         action_taken = False
 
-        circles = []
-        print(holes())
         render()
 
 pygame.quit()
