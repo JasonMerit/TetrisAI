@@ -150,6 +150,11 @@ class Tetris(gym.Env):
     # Colors
     black = (34, 34, 34)
     grey = (184, 184, 184)
+    pygame.font.init()  # init font
+    TXT_FONT = pygame.font.SysFont("comicsans", 25)
+    STAT_FONT = pygame.font.SysFont("comicsans", 35)
+    screen_size = 600
+    cell_size = 25
 
     def __init__(self, rendering=False):
         # Stop Pygame from opening a window every time this class is initialized
@@ -169,6 +174,8 @@ class Tetris(gym.Env):
         self.piece = Piece()
         self.next_piece = Piece()
         self.shifted = False
+        
+        
 
     # Functions for interaction with environment
     def step(self, action):
@@ -229,7 +236,23 @@ class Tetris(gym.Env):
                           self.top_left_y + self.cell_size * (self.piece.y + i - 2),
                           self.cell_size, self.cell_size)
                 pygame.draw.rect(self.screen, self.piece.color, square)
+        
+        # Draw "pieces placed"
+        score_label = self.AXIS_FONT.render("Pieces Placed",1,(255,255,255))
+        self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 25, 150))
 
+        # Draw lines cleared
+        score_label = self.STAT_FONT.render(str(self.pieces_placed),1,(255,255,255))
+        self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 70, 180))
+        
+        # Draw "Highscore"
+        score_label = self.AXIS_FONT.render("Highscore",1,(255,255,255))
+        self.screen.blit(score_label, (self.screen_size - self.score_label.get_width() - 40, 50))
+        
+        # Draw highscore
+        score_label = self.STAT_FONT.render(str(self.highscore),1,(255,255,255))
+        self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 70, 80))
+        
         # Display
         pygame.display.flip()
 

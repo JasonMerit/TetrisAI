@@ -66,15 +66,15 @@ def render():
 
     # Draw "pieces placed"
     score_label = AXIS_FONT.render("Pieces Placed",1,(255,255,255))
-    screen.blit(score_label, (screen_size - score_label.get_width() - 25, 120))
+    screen.blit(score_label, (screen_size - score_label.get_width() - 25, 150))
 
     # Draw lines cleared
     score_label = STAT_FONT.render(str(env.pieces_placed),1,(255,255,255))
-    screen.blit(score_label, (screen_size - score_label.get_width() - 70, 150))
+    screen.blit(score_label, (screen_size - score_label.get_width() - 70, 180))
     
     # Draw "Highscore"
     score_label = AXIS_FONT.render("Highscore",1,(255,255,255))
-    screen.blit(score_label, (screen_size - score_label.get_width() - 35, 50))
+    screen.blit(score_label, (screen_size - score_label.get_width() - 40, 50))
     
     # Draw highscore
     score_label = STAT_FONT.render(str(env.highscore),1,(255,255,255))
@@ -90,8 +90,8 @@ slow = True
 done = False
 
 while run:
-    #if rendering:
-        #clock.tick(40)
+    if rendering:
+        clock.tick(15)
     
 
     # Process input

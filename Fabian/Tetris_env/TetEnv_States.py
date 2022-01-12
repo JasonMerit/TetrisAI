@@ -150,6 +150,7 @@ class Tetris(gym.Env):
     # Colors
     black = (34, 34, 34)
     grey = (184, 184, 184)
+    
 
     def __init__(self):
         pygame.init()
@@ -162,6 +163,9 @@ class Tetris(gym.Env):
         self.piece = Piece()
         self.next_piece = Piece()
         self.shifted = False
+        
+        self.pieces_placed = 0
+        self.highscore = 0
 
         self.screen = pygame.display.set_mode([self.screen_size, self.screen_size])
         pygame.display.set_caption('Tetris')

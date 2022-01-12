@@ -376,7 +376,7 @@ class Tetris():
         pygame.quit()
         
 
-############# Exploration of board ##############
+#%% Exploration of board 
 
     def get_state(self):
         """
@@ -541,8 +541,7 @@ class Tetris():
         return self.new_piece()
     
     
-
-############# Evaulation and heuristics ##############
+#%% Evaulation and heuristics
 
     def holes(self, board):
         """
