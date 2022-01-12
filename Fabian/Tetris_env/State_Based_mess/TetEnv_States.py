@@ -141,7 +141,7 @@ class Tetris(gym.Env):
     # Rendering Dimensions
     screen_size = 600
     cell_size = 25
-    height = 12
+    height = 20
     width = 10
     top_left_y = screen_size / 2 - height * cell_size / 2
     top_left_x = screen_size / 2 - width * cell_size / 2

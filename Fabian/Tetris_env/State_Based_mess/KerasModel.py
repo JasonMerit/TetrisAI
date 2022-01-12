@@ -9,15 +9,13 @@ CWD = os.getcwd() + "\\"
 WEIGHT_PATH = os.path.join(CWD + 'WEIGHTS')
 LOG_DIR = os.path.join(CWD + 'LOGS')
 
-
-MAX_BUFFER_LENGTH = 100_000
-REPLAY_MEMORY_SIZE = 50_000
-MIN_REPLAY_MEMORY_SIZE = 65
+MAX_BUFFER_LENGTH = 100000
+MIN_REPLAY_MEMORY_SIZE = 512
 MINIBATCH_SIZE = 64
 
 
 class DQN:
-    def __init__(self, env, state_size=7, discount=1, epsilon=1, epsilon_min=0.0001, epsilon_decay=0.9995):
+    def __init__(self, env, state_size=7, discount=0.99, epsilon=1, epsilon_min=0.0001, epsilon_decay=0.9995):
         self.state_size = state_size
         self.model = self.create_model()
         self.discount = discount
@@ -26,18 +24,12 @@ class DQN:
         self.epsilon_decay = epsilon_decay
         self.replay_memory = deque(maxlen=MAX_BUFFER_LENGTH)
         self.env = env
-        self.tensorboard = tf.keras.callbacks.TensorBoard(log_dir=LOG_DIR,
-                                                          histogram_freq=1000,
-                                                          write_graph=True,
-                                                          write_images=True)
 
     def create_model(self):
         """Returns a new model."""
 
         model = tf.keras.models.Sequential([
-            Dense(64, input_dim=self.state_size, activation='relu'),
-            Dense(64, activation='relu'),
-            Dense(32, activation='relu'),
+            Dense(32, input_dim=self.state_size, activation='relu'),
             Dense(1, activation='linear'),
         ])
 
@@ -63,7 +55,7 @@ class DQN:
 
     def take_action(self, actions, Features):
         """
-        Takes in array of [state, features]
+        Takes in array of actions and Features, both arrays of same length
         returns the state chosen by either random action or the NN
         """
         if random.uniform(0, 1) < self.epsilon:
@@ -71,20 +63,11 @@ class DQN:
             random_action_feature = (actions[r], Features[r])
             return random_action_feature
 
-        max_rating = None
-        best_action = None
-        best_Features = None
         # pass the features to the model in an array
         ratings = self.predict_ratings(Features)
-
-        for index, action in enumerate(actions):
-            rating = ratings[index]
-            if not max_rating or rating > max_rating:
-                max_rating = rating
-                best_action = action
-                best_Features = Features[index]
-
-        return best_action, best_Features
+        # get argmax
+        max_index = np.argmax(ratings)
+        return actions[max_index], Features[max_index]
 
     def load(self, model_name):
         try:
@@ -107,20 +90,15 @@ class DQN:
         steps = 0
 
         for game in range(1, games + 1):
-            if game % 50 == 0:
-                print(f'Game: {game} Steps: {steps} AVG Game length: {steps/game}')
             if game % save == 0:
-                self.save(f'{name}_{game}')
+                self.save('{}_{}'.format(name, game))
             actions_list, Features_list, score, done, _ = self.env.reset()
             current_features = np.zeros(len(Features_list[0]), dtype=np.int64)  # set the Features from a new game arbitrarily
             current_score = 0
             while not done:
-                self.env.render()
                 steps += 1
                 action, future_features = self.take_action(actions_list, Features_list)
-                actions_list, Features_list, score, done, _ = self.env.step(np.array(action))
-                if len(actions_list) < 1:
-                    break
+                actions_list, Features_list, score, done, _ = self.env.step(action)
                 self.replay_memory.append((current_features, score, done, future_features))
                 current_features = future_features
                 current_score += score

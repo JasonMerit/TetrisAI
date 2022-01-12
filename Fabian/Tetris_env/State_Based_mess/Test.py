@@ -3,10 +3,8 @@ from KerasModel import DQN
 
 env = Tetris()
 
-a_5000 = DQN(env=env)
 a_10000 = DQN(env=env)
-a_5000.load('FIRST_TRY_5000')
-a_10000.load('FIRST_TRY_10000')
+a_10000.load('FIRST_TRY_100')
 
 steps = 0
 games = 0
