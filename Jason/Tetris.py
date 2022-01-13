@@ -495,6 +495,7 @@ class Tetris():
         final_states = [state for state in expanded if self.is_final_state(state)]
 
         self.set_state(first_state)  # Shouldn't have to do this
+
         return final_states
 
     def get_placed_board(self):
