@@ -235,11 +235,13 @@ while run:
                     for event in pygame.event.get():
                         if event.type == pygame.QUIT:
                             pygame.quit()
-                            quit()
+                            run = False
+                            pause = False
                         if event.type == pygame.KEYDOWN:
                             if event.key in [pygame.K_ESCAPE, pygame.K_q]:
                                 pygame.quit()
-                                quit()
+                                run = False
+                                pause = False
                             elif event.key == pygame.K_p:
                                 pause = False
 
