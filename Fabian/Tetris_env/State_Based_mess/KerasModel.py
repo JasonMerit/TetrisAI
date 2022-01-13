@@ -95,7 +95,7 @@ class DQN:
             actions_list, Features_list, score, done, _ = self.env.reset()
             current_features = np.zeros(len(Features_list[0]), dtype=np.int64)  # set the Features from a new game arbitrarily
             current_score = 0
-            while not done:
+            while not done:     # Tetris is done when there are no valid actions left
                 steps += 1
                 action, future_features = self.take_action(actions_list, Features_list)
                 actions_list, Features_list, score, done, _ = self.env.step(action)
@@ -127,7 +127,7 @@ class DQN:
                 rating = self.model.predict(future_features.reshape(-1, self.state_size))
                 new_q = score + rating[0][0] * self.epsilon_decay
             else:
-                new_q = score
+                new_q = 0   # score for game over is 0
             X.append(current_features)
             Y.append(new_q)
 
