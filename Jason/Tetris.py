@@ -368,7 +368,7 @@ class Tetris():
         Returns position and rotations of current piece
         :return: Tuple
         """
-        return (self.piece.x, self.piece.y, self.piece.rotation)
+        return self.piece.x, self.piece.y, self.piece.rotation
 
     def set_state(self, state):
         self.piece.x = state[0]
