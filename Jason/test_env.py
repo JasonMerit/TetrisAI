@@ -47,7 +47,7 @@ def flip():
 if h_flip:
     flip()
 
-env = Tetris([], False, False)
+env = Tetris(board, False, True)
 env.set_state((x, y, 0))
 
 def get_grid():
@@ -85,6 +85,25 @@ def sandwiched(x, y):
     left = env.board[y, x-1]
     right = env.board[y, x+1]
     return left and right
+
+def draw():
+    # Draw circles
+    for x, y in circles:
+        center = (env.top_left_x + env.cell_size*(x-2.5), env.top_left_y + env.cell_size*(y-1.5))
+        env.pygame.draw.circle(env.screen, env.grey, center, 8)
+    
+    # Draw axis
+    for y in range(height):
+        string = env.TXT_FONT.render(str(y+2),1,(255,255,255))
+        env.screen.blit(string, (env.top_left_x - string.get_width() - 10,
+                             env.top_left_y+env.cell_size*y))
+    for x in range(width):
+        string = env.TXT_FONT.render(str(x+3),1,(255,255,255))
+        env.screen.blit(string, (env.top_left_x + x*env.cell_size + 4,
+                             env.top_left_y + env.height*env.cell_size))
+    
+    # Display
+    pygame.display.flip()
 
 
 #print(well_cells())
@@ -146,10 +165,10 @@ def cycle_states(states):
     starting_state = env.get_state()
     for state in states:
         env.set_state(state)
-        render()
+        env.render()
         clock.tick(1)
         env.set_state(starting_state)
-        render()
+        env.render()
         clock.tick(10)
 
 def bumpiness():
@@ -167,96 +186,12 @@ def bumpiness():
 #print(bumpiness())
     
 
-screen_size = 600
-black = (34, 34, 34)
-grey = (184, 184, 184)
-cell_size = 25
-top_left_y = screen_size / 2 - height * cell_size / 2
-top_left_x = screen_size / 2 - width * cell_size / 2
-
-pygame.font.init()  # init font
-STAT_FONT = pygame.font.SysFont("comicsans", 35)
-AXIS_FONT = pygame.font.SysFont("comicsans", 20)
-
-
-screen = pygame.display.set_mode([screen_size, screen_size])
-pygame.display.set_caption('Tetris')
-background = pygame.Surface(screen.get_size())
-
-
-def render():
-    screen.fill(black)
-
-    # Get and draw grid
-    grid = get_grid()
-    background = (top_left_x - 1,
-                  top_left_y - 1,
-                  width * cell_size + 1,
-                  height * cell_size + 1)
-    pygame.draw.rect(screen, grey, background)
-
-
-    for i in range(width):
-        for j in range(height):
-            val = grid[j, i]
-            color = grey if val != 0 else black
-            square = (top_left_x + cell_size * i,
-                      top_left_y + cell_size * j,
-                      cell_size - 1, cell_size - 1)
-            pygame.draw.rect(screen, color, square)
-
-    # Draw piece
-    size = len(env.piece.shape[0])
-    for i in range(size):
-        for j in range(size):
-            if env.piece.shape[i, j] == 0:
-                continue
-            square = (top_left_x + cell_size * (env.piece.x + j - 3),  # POSITION HERE
-                      top_left_y + cell_size * (env.piece.y + i - 2),
-                      cell_size, cell_size)
-            pygame.draw.rect(screen, env.piece.color, square)
-
-    # Draw "pieces placed"
-    score_label = AXIS_FONT.render("Pieces Placed",1,(255,255,255))
-    screen.blit(score_label, (screen_size - score_label.get_width() - 25, 150))
-
-    # Draw lines cleared
-    score_label = STAT_FONT.render(str(env.pieces_placed),1,(255,255,255))
-    screen.blit(score_label, (screen_size - score_label.get_width() - 70, 180))
-    
-    # Draw "Highscore"
-    score_label = AXIS_FONT.render("Highscore",1,(255,255,255))
-    screen.blit(score_label, (screen_size - score_label.get_width() - 40, 50))
-    
-    # Draw highscore
-    score_label = STAT_FONT.render(str(env.highscore),1,(255,255,255))
-    screen.blit(score_label, (screen_size - score_label.get_width() - 70, 80))
-
-    # Draw position
-    center = (top_left_x + cell_size*(env.piece.x-2.5),
-              top_left_y + cell_size*(env.piece.y-1.5))
-    pygame.draw.circle(screen, (255,255,255), center, 8)
-
-    # Draw circles
-    for x, y in circles:
-        center = (top_left_x + cell_size*(x-2.5), top_left_y + cell_size*(y-1.5))
-        pygame.draw.circle(screen, grey, center, 8)
-
-    # Draw axis
-    for y in range(height):
-        string = AXIS_FONT.render(str(y+2),1,(255,255,255))
-        screen.blit(string, (top_left_x - string.get_width() - 10,
-                             top_left_y+cell_size*y))
-    for x in range(width):
-        string = AXIS_FONT.render(str(x+3),1,(255,255,255))
-        screen.blit(string, (top_left_x + x*cell_size + 4,
-                             top_left_y + height*cell_size))
-
-    pygame.display.flip()
 
 
 
-render()
+
+env.render()
+draw()
 clock = pygame.time.Clock()
 action_taken = False
 run = True
@@ -312,7 +247,7 @@ while run:
         env.step(action)
 
         action_taken = False
-
-        render()
+        env.render()
+        draw()
 
 pygame.quit()
