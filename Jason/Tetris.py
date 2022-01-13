@@ -135,7 +135,8 @@ class Tetris():
     screen_size = 600
     cell_size = 25
 
-    def __init__(self, board, training, rendering=True):
+    # board is for debugging
+    def __init__(self, training, board = [], rendering=True):
 
         # super(Tetris, self).__init__()
         # self.action_space = spaces.Discrete(6)
@@ -253,16 +254,22 @@ class Tetris():
         self.piece = self.next_piece
         self.next_piece = Piece()
         self.clear_lines()
+        
+        # Game over if spawning piece is overlapping
+        game_over = not self.valid_position()
+        
+        # Reset game if not training
+        if game_over and not self.training:
+            self.reset()
 
-        # Check for game over by overlapping spawn piece
-        if not self.valid_position():
-            if not self.training:
-                self.reset()
-
-        return not self.valid_position()
+        return game_over
 
     def new_board(self):
-        board = np.zeros([self.height + 2, self.width], dtype=int)
+        """
+        Return an empty (width x height) 2d array enclosed by  
+        
+        """        
+        board = np.zeros([self.height + 2, self.width])
         wall = np.ones([self.height + 2, 2])
         floor = np.ones([2, self.width + 5])
         board = np.c_[np.ones(self.height + 2), wall, board, wall]
