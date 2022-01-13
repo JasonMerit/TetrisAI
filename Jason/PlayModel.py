@@ -119,7 +119,6 @@ while run:
                                 pause = False
     
     # Let agent determine and take next action
-    
     # Find all final_states and evaluate them
     states = env.get_final_states()
     evaluations = env.get_evaluations(states)

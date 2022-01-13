@@ -234,7 +234,6 @@ class Tetris():
         return bumpiness
 
 
-
     def valid_position(self):
         """
         Returns whether the current position is valid.
@@ -278,10 +277,9 @@ class Tetris():
         # Check for game over by overlapping spawn piece
         if not self.valid_position():
             if not self.training:
-                if self.pieces_placed  > self.highscore:
-                    self.highscore = self.pieces_placed
-                self.pieces_placed = 0
                 self.reset()
+            
+            
 
         return not self.valid_position()
 
@@ -363,6 +361,8 @@ class Tetris():
         Resets game by creating new board and pieces
         :return: None
         """
+        self.highscore = max(self.highscore, self.pieces_placed)
+        self.pieces_placed = 0
         self.board = self.new_board()
         self.piece = Piece()
         self.next_piece = Piece()

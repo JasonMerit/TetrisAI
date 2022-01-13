@@ -30,9 +30,9 @@ board = np.array([[1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
                  [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1],
                  [1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1],
                  [1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1],
-                 [1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1],
-                 [1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
-                 [1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
+                 [1, 1, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1],
+                 [1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
+                 [1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1],
                  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
                  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]])
 
@@ -47,7 +47,7 @@ def flip():
 if h_flip:
     flip()
 
-env = Tetris(board, False, False)
+env = Tetris([], False, False)
 env.set_state((x, y, 0))
 
 def get_grid():
@@ -119,25 +119,26 @@ def negate(arr):
     return np.where((arr==0)|(arr==1), arr^1, arr)
 
 
-def top():
+def get_top():
     grid = get_grid()
-    print(grid)
-    top = len(grid)
+    top = len(grid) # Set to floor level
+
     for x in range(len(grid[0])):
         if not grid[:, x].any():
             continue
         column = grid[:, x]
         y = np.argmax(column)
-        print(x, y)
         if y < top:
             top = y
-
+    
     # Convert to board, and subtract piece range
     is_long_bar = env.piece.tetromino == 6
     top += 2
     top -= 4 if is_long_bar else 3
 
     return max(top, 0 if is_long_bar else 1)
+
+print(get_top())
 
 
 
@@ -150,7 +151,6 @@ def cycle_states(states):
         env.set_state(starting_state)
         render()
         clock.tick(10)
-    env.set_state(starting_state)
 
 def bumpiness():
     """
@@ -164,7 +164,7 @@ def bumpiness():
         
     return bumpiness
 
-print(bumpiness())
+#print(bumpiness())
     
 
 screen_size = 600
@@ -218,11 +218,19 @@ def render():
 
     # Draw "pieces placed"
     score_label = AXIS_FONT.render("Pieces Placed",1,(255,255,255))
-    screen.blit(score_label, (screen_size - score_label.get_width() - 25, 120))
+    screen.blit(score_label, (screen_size - score_label.get_width() - 25, 150))
 
     # Draw lines cleared
     score_label = STAT_FONT.render(str(env.pieces_placed),1,(255,255,255))
-    screen.blit(score_label, (screen_size - score_label.get_width() - 70, 150))
+    screen.blit(score_label, (screen_size - score_label.get_width() - 70, 180))
+    
+    # Draw "Highscore"
+    score_label = AXIS_FONT.render("Highscore",1,(255,255,255))
+    screen.blit(score_label, (screen_size - score_label.get_width() - 40, 50))
+    
+    # Draw highscore
+    score_label = STAT_FONT.render(str(env.highscore),1,(255,255,255))
+    screen.blit(score_label, (screen_size - score_label.get_width() - 70, 80))
 
     # Draw position
     center = (top_left_x + cell_size*(env.piece.x-2.5),

@@ -12,18 +12,25 @@ import numpy as np
 
 import neat
 import pickle
+import time
+import pandas as pd
+
 #import visualize
 
-
+header = ['Gen', 'Pieces Placed', 'Computation Time [min]']
+data = []
 gen = 0
+total_pp = 0
+start_time = time.time()
 
 def eval_genomes(genomes, config):
     """
     runs the simulation of the current population of
     agents and sets their fitness based on score.
     """
-    global gen
+    global gen, total_pp, data
     gen += 1
+    
 
     # start by creating lists holding the genome itself, the
     # neural network associated with the genome and the
@@ -67,6 +74,7 @@ def eval_genomes(genomes, config):
             # Update fitness and remove if done
             ge[x].fitness += 1
             rem[x] = done
+            total_pp += 1
         
         # Remove loser envs (rem == 0 - if done = False)
         best_agent = nets[0]
@@ -78,8 +86,12 @@ def eval_genomes(genomes, config):
 
     pickle.dump(best_agent, open("best.pickle", "wb"))
     
-    if gen % 100 == 0: # Save milestones
+    if gen % 1 == 0: # Save milestones
         pickle.dump(best_agent, open("best.pickle_{}".format(gen), "wb"))    
+        data.append([gen, total_pp, (time.time() - start_time) / 60])
+        csv = pd.DataFrame(data, columns=header)
+        csv.to_csv('Training_13.csv', index=False)
+        
     
 
 def run(config_file):
