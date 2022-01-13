@@ -330,7 +330,7 @@ class Tetris():
             score += 1200
 
         score += self.height - self.lock_height()  # We assume that the AI presses down all the way
-
+        
         return score
 
     def render(self):
@@ -407,7 +407,7 @@ class Tetris():
         Resets game by creating new board and pieces
         :return: None
         """
-        self.highscore = max(self.highscore, self.score)
+        self.highscore = max(self.highscore, self.pieces_placed)
         self.pieces_placed = 0
         self.score = 0
         self.lines_cleared = 0
@@ -665,6 +665,7 @@ class Tetris():
                 
         # print(f"rows: {len(row)}")
         # print("piece_cells: {}".format(piece_cells))
+        # print("eroded_cells: {}".format(piece_cells * len(row)))
         
         return piece_cells * len(row), len(row)
 

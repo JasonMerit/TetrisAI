@@ -72,7 +72,7 @@ def eval_genomes(genomes, config):
             done = env.place_state(best_state)
 
             # Update fitness and remove if done
-            ge[x].fitness = env.score
+            ge[x].fitness = int(env.score)
             rem[x] = done
             total_pp += 1
         
@@ -86,11 +86,11 @@ def eval_genomes(genomes, config):
 
     pickle.dump(best_agent, open("best.pickle", "wb"))
     
-    if gen % 1 == 0: # Save milestones
+    if gen % 10 == 0: # Save milestones
         pickle.dump(best_agent, open("best.pickle_{}".format(gen), "wb"))    
         data.append([gen, total_pp, (time.time() - start_time) / 60])
         csv = pd.DataFrame(data, columns=header)
-        csv.to_csv('Training_13.csv', index=False)
+        csv.to_csv('Training_13_evening.csv', index=False)
         
     
 
