@@ -82,14 +82,22 @@ class DQN:
                 print(f'Game: {game} Steps: {steps} AVG {steps/game}')
             if game % save == 0:
                 self.save('{}_{}_{}'.format(name, game, steps))
-            actions_list, Features_list, score, done = self.env.reset()
+            self.env.reset()
+            states = self.env.get_final_states()
+            Features_list = self.env.get_evaluations(states)
+            done = False
             # set the Features from a new game arbitrarily to zero
             current_features = np.zeros(len(Features_list[0]), dtype=np.int64)
             current_score = 0
             while not done:     # Tetris is done when there are no valid actions left
                 steps += 1
-                action, future_features = self.take_action(actions_list, Features_list)
-                actions_list, Features_list, score, done = self.env.step(action)
+                action, future_features = self.take_action(states, Features_list)
+                done = self.env.place_state(action)
+                score = self.env.get_score()
+
+                states = self.env.get_final_states()
+                Features_list = self.env.get_evaluations(states)
+
                 self.replay_memory.append((current_features, score, done, future_features))
                 current_features = future_features
                 current_score += score

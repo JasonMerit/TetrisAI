@@ -375,7 +375,7 @@ class Tetris():
         Returns position and rotations of current piece
         :return: Tuple
         """
-        return (self.piece.x, self.piece.y, self.piece.rotation)
+        return self.piece.x, self.piece.y, self.piece.rotation
 
     def set_state(self, state):
         self.piece.x = state[0]
@@ -502,6 +502,7 @@ class Tetris():
         final_states = [state for state in expanded if self.is_final_state(state)]
 
         self.set_state(first_state)  # Shouldn't have to do this
+
         return final_states
 
     def get_placed_board(self):
