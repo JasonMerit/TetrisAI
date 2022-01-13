@@ -47,7 +47,7 @@ def flip():
 if h_flip:
     flip()
 
-env = Tetris(board, False, True)
+env = Tetris(False, board, True)
 env.set_state((x, y, 0))
 
 def get_grid():

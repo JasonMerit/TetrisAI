@@ -43,7 +43,7 @@ def eval_genomes(genomes, config):
         genome.fitness = 0  # start with fitness level of 0
         net = neat.nn.FeedForwardNetwork.create(genome, config)
         nets.append(net)
-        envs.append(Tetris([], True, False))
+        envs.append(Tetris(True))
         ge.append(genome)
 
     nets = np.array(nets)

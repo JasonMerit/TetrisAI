@@ -136,7 +136,7 @@ class Tetris():
     cell_size = 25
 
     # board is for debugging
-    def __init__(self, training, board = [], rendering=True):
+    def __init__(self, training, board = [], rendering=False):
 
         # super(Tetris, self).__init__()
         # self.action_space = spaces.Discrete(6)
