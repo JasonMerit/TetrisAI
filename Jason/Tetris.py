@@ -137,12 +137,6 @@ class Tetris():
 
     # board is for debugging
     def __init__(self, training, board = [], rendering=False):
-
-        # super(Tetris, self).__init__()
-        # self.action_space = spaces.Discrete(6)
-        # Observation space contains the board, and an extra row representing the next piece
-        # self.observation_space = spaces.Box(low=0, high=1, shape=(207, 1), dtype=int)
-
         self.training = training
         self.height = 16
         self.width = 10
