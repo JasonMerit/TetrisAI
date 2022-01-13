@@ -78,10 +78,9 @@ class Piece:
                    [0, 0, 1, 0],
                    [0, 0, 1, 0]]])
 
-    shapes = [S, Z, T, L,
-              J, O, I]
-    shape_colors = [(0, 255, 0), (255, 0, 0), (128, 0, 128), (255, 165, 0),
-                    (0, 0, 255), (255, 255, 0), (0, 255, 255)]
+    shapes = [S, Z, T, L, J, O, I]
+    shape_colors = [(0, 255, 0), (255, 0, 0), (128, 0, 128), 
+                    (255, 165, 0), (0, 0, 255), (255, 255, 0), (0, 255, 255)]
 
     def __init__(self):
         """
@@ -109,7 +108,7 @@ class Piece:
         self.rotation = (self.rotation + dir) % num_rotations
         self.shape = self.shapes[self.tetromino][self.rotation]
 
-    def change(self):
+    def change(self): # debugging
         """
         Change current piece to another piece (for debugging)
         :return: None
@@ -124,9 +123,10 @@ class Piece:
 class Tetris():
     """
     Tetris class acting as enviroment.
-    The game data is represented using a matrix representing the board,
+    The game data is represented using a 2d numpy array representing the board,
     and piece objects. The board is extended out of view for easy collision
-    detection, as such occationally the a submatrix is constructed.
+    detection. Occationally sub arrays called grids representing the visual
+    part of the board are constructed.
     """
 
     # Colors and constant dimenstions
@@ -135,7 +135,7 @@ class Tetris():
     screen_size = 600
     cell_size = 25
 
-    # board is for debugging
+    # board is for debugging (remember to delete redefinition of height and width)
     def __init__(self, training, board = [], rendering=False):
         self.training = training
         self.height = 16
@@ -145,28 +145,35 @@ class Tetris():
         self.next_piece = Piece()
 
         self.pieces_placed = 0
+        self.lines_cleared = 0
+        self.score = 0 # wHAT SHOULD score be measured as?
         self.highscore = 0
 
         self.current_score = 0
-        self.score = 0
         self.current_lines = 0
         self.current_height = 0
         self.number_of_lines = 0
 
-        # Rendering Dimensions
-        self.height = len(self.board) - 4
-        self.width = len(self.board[0]) - 5
-        self.top_left_y = self.screen_size / 2 - self.height * self.cell_size / 2
-        self.top_left_x = self.screen_size / 2 - self.width * self.cell_size / 2
-
         if rendering:
-            pygame.font.init()  # init font
+            # Initialize pygame and fonts
             pygame.init()
-            self.TXT_FONT = pygame.font.SysFont("comicsans", 25)
+            pygame.font.init()
+            
+            # Rendering Dimensions
+            self.height = len(self.board) - 4
+            self.width = len(self.board[0]) - 5
+            self.top_left_y = self.screen_size / 2 - self.height * self.cell_size / 2
+            self.top_left_x = self.screen_size / 2 - self.width * self.cell_size / 2
+            
+            # Rendering objects
+            self.TXT_FONT = pygame.font.SysFont("comicsans", 20)
             self.STAT_FONT = pygame.font.SysFont("comicsans", 35)
             self.screen = pygame.display.set_mode([self.screen_size, self.screen_size])
             pygame.display.set_caption('Tetris')
             self.background = pygame.Surface(self.screen.get_size())
+            
+    def get_grid(self):
+        return self.board[2:2 + self.height, 3:3 + self.width]
 
     def step(self, action):
         """
@@ -218,10 +225,10 @@ class Tetris():
         # Get area of board the shape covers
         x, y = self.piece.x, self.piece.y
         size = len(self.piece.shape)
-        sub_board = self.board[y:y + size, x:x + size]
+        piece_pos = self.board[y:y + size, x:x + size]
 
-        # Check for collision by summing and checking for overlap
-        if np.any(self.piece.shape + sub_board > 1):
+        # Check for collision by summing and checking values of 2
+        if np.any(self.piece.shape + piece_pos == 2):
             return False
         return True
 
@@ -260,7 +267,8 @@ class Tetris():
 
     def new_board(self):
         """
-        Return an empty (width x height) 2d array enclosed by  
+        Return an empty (width x height) 2d array enclosed by walls
+        (3 left, 2 right) and a 2 deep floor and a 2 tall open ceiling
         
         """        
         board = np.zeros([self.height + 2, self.width])
@@ -275,7 +283,7 @@ class Tetris():
         Check and clear lines if rows are full
         """
         # Get visual part of board
-        grid = self.board[2:2 + self.height, 3:3 + self.width]
+        grid = self.get_grid()
         idx = np.array([], dtype=int)
 
         # Find complete rows in reverse order
@@ -289,7 +297,8 @@ class Tetris():
             grid = np.vstack((np.zeros(10), grid))  # Add an empty row on top
             idx += 1  # Shift remaining clear rows a line down
 
-        # Add final result to board
+        # Add final result to board and increment lines cleared
+        self.lines_cleared += len(idx)
         self.board[2:2 + self.height, 3:3 + self.width] = grid
 
     def render(self):
@@ -324,14 +333,6 @@ class Tetris():
                           self.cell_size, self.cell_size)
                 pygame.draw.rect(self.screen, self.piece.color, square)
 
-        # Draw "pieces placed"
-        score_label = self.TXT_FONT.render("Pieces Placed", 1, (255, 255, 255))
-        self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 25, 150))
-
-        # Draw lines cleared
-        score_label = self.STAT_FONT.render(str(self.pieces_placed), 1, (255, 255, 255))
-        self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 70, 180))
-
         # Draw "Highscore"
         score_label = self.TXT_FONT.render("Highscore", 1, (255, 255, 255))
         self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 40, 50))
@@ -339,6 +340,24 @@ class Tetris():
         # Draw highscore
         score_label = self.STAT_FONT.render(str(self.highscore), 1, (255, 255, 255))
         self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 70, 80))
+        
+        # Draw "pieces placed"
+        score_label = self.TXT_FONT.render("Pieces Placed", 1, (255, 255, 255))
+        self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 25, 150))
+
+        # Draw pieces_placed
+        score_label = self.STAT_FONT.render(str(self.pieces_placed), 1, (255, 255, 255))
+        self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 70, 180))
+        
+        # Draw "lines cleard"
+        score_label = self.TXT_FONT.render("Lines Cleared", 1, (255, 255, 255))
+        self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 25, 250))
+
+        # Draw lines cleared
+        score_label = self.STAT_FONT.render(str(self.lines_cleared), 1, (255, 255, 255))
+        self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 70, 280))
+
+        
 
         # Display
         pygame.display.flip()
@@ -353,7 +372,7 @@ class Tetris():
         self.board = self.new_board()
         self.piece = Piece()
         self.next_piece = Piece()
-        self.shift_piece = None
+        self.shift_piece = None # debugging
 
     def close(self):
         """
@@ -372,6 +391,9 @@ class Tetris():
         return self.piece.x, self.piece.y, self.piece.rotation
 
     def set_state(self, state):
+        """
+        Sets current piece to given state
+        """        
         self.piece.x = state[0]
         self.piece.y = state[1]
         self.piece.rotation = state[2]
@@ -438,9 +460,6 @@ class Tetris():
         self.set_state(temp)
         return final
 
-    def get_grid(self):
-        return self.board[2:2 + self.height, 3:3 + self.width]
-
     def get_top(self):
         grid = self.get_grid()
         top = len(grid)
@@ -472,7 +491,7 @@ class Tetris():
 
         queue = [top_state]
         expanded = set()
-        step = 0
+        step = 0 # debugging (and prints)
         while queue:
             expanding_state = queue.pop(0)
             # print("[{}] {}".format(step, expanding_state))
@@ -492,7 +511,6 @@ class Tetris():
             # print("")
 
         # Filter out all non-final states and convert to list
-        # (I don't want to check before adding to expanded)
         final_states = [state for state in expanded if self.is_final_state(state)]
 
         self.set_state(first_state)  # Shouldn't have to do this
@@ -501,16 +519,15 @@ class Tetris():
 
     def get_placed_board(self):
         """
-        Return grid after placing piece
+        Return board after placing piece
         """
-
         # Find coordinates the current piece inhabits
         indices = np.where(self.piece.shape == 1)
         a, b = indices[0], indices[1]
         a, b = a + self.piece.y, b + self.piece.x
         coords = zip(a, b)
 
-        # Change the board accordingly
+        # Copy and change the board accordingly
         board = np.copy(self.board)
         for c in coords:
             board[c] = 1

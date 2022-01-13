@@ -72,7 +72,7 @@ def eval_genomes(genomes, config):
             done = env.place_state(best_state)
 
             # Update fitness and remove if done
-            ge[x].fitness += 1
+            ge[x].fitness = env.pieces_placed
             rem[x] = done
             total_pp += 1
         

@@ -157,7 +157,7 @@ def get_top():
 
     return max(top, 0 if is_long_bar else 1)
 
-print(get_top())
+#print(get_top())
 
 
 

@@ -15,7 +15,7 @@ header = ["gen", "avg", "var"]
 for i in range(n):
     header.append(i+1)
 
-env = Tetris([], True, False)
+env = Tetris(False)
 
 
 data = []
