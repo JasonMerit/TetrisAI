@@ -122,7 +122,7 @@ class DQN:
 
         for i, (current_features, score, done, future_features) in enumerate(minibatch):
             if not done:
-                rating = self.model.predict(future_features.reshape(-1, self.state_size))
+                rating = self.model.predict(np.array(future_features).reshape(-1, self.state_size))
                 new_q = score + rating[0][0] * self.epsilon_decay
             else:
                 new_q = 0   # score for game over is 0
