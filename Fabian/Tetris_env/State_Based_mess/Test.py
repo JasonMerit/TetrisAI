@@ -1,4 +1,4 @@
-from TetEnv_States import Tetris
+from TetEnv_Rendering import Tetris
 from KerasModel import DQN
 
 env = Tetris()

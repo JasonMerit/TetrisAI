@@ -1,8 +1,5 @@
-import pygame
 import numpy as np
 import random
-import gym
-from gym import spaces
 
 
 class Piece:
@@ -129,7 +126,7 @@ class Piece:
 
 
 # noinspection PyTypeChecker
-class Tetris(gym.Env):
+class Tetris:
     """
     Tetris class acting as environment.
     The game data is represented using a matrix representing the board,
@@ -141,7 +138,7 @@ class Tetris(gym.Env):
     # Rendering Dimensions
     screen_size = 600
     cell_size = 25
-    height = 20
+    height = 16
     width = 10
     top_left_y = screen_size / 2 - height * cell_size / 2
     top_left_x = screen_size / 2 - width * cell_size / 2
@@ -150,24 +147,8 @@ class Tetris(gym.Env):
     # Colors
     black = (34, 34, 34)
     grey = (184, 184, 184)
-    pygame.font.init()  # init font
-    TXT_FONT = pygame.font.SysFont("comicsans", 25)
-    STAT_FONT = pygame.font.SysFont("comicsans", 35)
-    screen_size = 600
-    cell_size = 25
 
-    def __init__(self, rendering=False):
-        # Stop Pygame from opening a window every time this class is initialized
-        self.rendering = rendering
-        if rendering:
-            pygame.init()
-            self.screen = pygame.display.set_mode([self.screen_size, self.screen_size])
-            pygame.display.set_caption('Tetris')
-            self.background = pygame.Surface(self.screen.get_size())
-        # Following is left is for potential compatibility with Open AI Gym:
-        super(Tetris, self).__init__()
-        self.action_space = spaces.Discrete(7)
-        self.observation_space = spaces.Box(low=0, high=1, shape=(207, 1), dtype=int)
+    def __init__(self):
         # Initialize board state
         self.score = 0
         self.board = self.new_board()
@@ -175,12 +156,7 @@ class Tetris(gym.Env):
         self.next_piece = Piece()
         self.shifted = False
 
-        self.lines_cleared = 0
-        self.max_lines = 0
-        self.placed_pieces = 0
-        self.highscore = 0
-
-    # Functions for interaction with environment
+    #%% Functions for interaction with environment
     def step(self, action):
         """
         Places the piece according to action, then spawns a new piece
@@ -193,7 +169,6 @@ class Tetris(gym.Env):
         self.score += score
         # Place the current piece, before changing to a new one
         self.place_piece()
-        self.placed_pieces += 1
         self.clear_lines()
         # Change piece
         self.piece = self.next_piece
@@ -201,84 +176,9 @@ class Tetris(gym.Env):
         actions, Features = self.search_actions_features()
         game_over = False
         if len(actions) < 1 or not self.valid_position():
-            self.max_lines = max(self.max_lines, self.lines_cleared)
-            self.highscore = max(self.highscore, self.placed_pieces)
-            self.placed_pieces = 0
             game_over = True
 
-        return actions, Features, self.score, game_over, {}
-
-    def render(self, mode="human"):
-        # Do not run this function if not rendering, it may cause a crash
-        if not self.rendering:
-            print('Rendering is off for this instance of the class.')
-            return
-        # Clear the screen
-        self.screen.fill(self.black)
-
-        # Get and draw grid
-        grid = self.get_grid()
-        background = (self.top_left_x - 1,
-                      self.top_left_y - 1,
-                      self.width * self.cell_size + 1,
-                      self.height * self.cell_size + 1)
-        pygame.draw.rect(self.screen, self.grey, background)
-
-        for i in range(self.width):
-            for j in range(self.height):
-                val = grid[j, i]
-                color = self.grey if val != 0 else self.black
-                square = (self.top_left_x + self.cell_size * i,
-                          self.top_left_y + self.cell_size * j,
-                          self.cell_size - 1, self.cell_size - 1)
-                pygame.draw.rect(self.screen, color, square)
-
-        # Draw piece
-        size = len(self.piece.shape[0])
-        for i in range(size):
-            for j in range(size):
-                if self.piece.shape[i, j] == 0:
-                    continue
-                square = (self.top_left_x + self.cell_size * (self.piece.x + j - 3),  # POSITION HERE
-                          self.top_left_y + self.cell_size * (self.piece.y + i - 2),
-                          self.cell_size, self.cell_size)
-                pygame.draw.rect(self.screen, self.piece.color, square)
-
-        # Draw "pieces placed"
-        score_label = self.TXT_FONT.render("Pieces Placed", 1, (255, 255, 255))
-        self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 25, 150))
-
-        # Draw lines cleared
-        score_label = self.STAT_FONT.render(str(self.placed_pieces), 1, (255, 255, 255))
-        self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 70, 180))
-
-        # Draw "Highscore"
-        score_label = self.TXT_FONT.render("Highscore", 1, (255, 255, 255))
-        self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 40, 50))
-
-        # Draw highscore
-        score_label = self.STAT_FONT.render(str(self.highscore), 1, (255, 255, 255))
-        self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 70, 80))
-
-        # Draw "Max lines"
-        score_label = self.TXT_FONT.render("Max lines", 1, (255, 255, 255))
-        self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 40, 250))
-
-        # Draw lines_cleared
-        score_label = self.STAT_FONT.render(str(self.max_lines), 1, (255, 255, 255))
-        self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 70, 280))
-
-        # Draw "Lines cleared"
-        score_label = self.TXT_FONT.render("Lines cleared", 1, (255, 255, 255))
-        self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 40, 350))
-
-        # Draw lines_cleared
-        score_label = self.STAT_FONT.render(str(self.lines_cleared), 1, (255, 255, 255))
-        self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 70, 380))
-
-
-        # Display
-        pygame.display.flip()
+        return actions, Features, self.score, game_over
 
     def reset(self):
         """
@@ -289,7 +189,6 @@ class Tetris(gym.Env):
         self.piece = Piece()
         self.next_piece = Piece()
         self.score = 0
-        self.lines_cleared = 0
 
         actions, Features = self.search_actions_features()
         game_over = False
@@ -297,14 +196,7 @@ class Tetris(gym.Env):
             game_over = True
         return actions, Features, self.score, game_over, {}
 
-    def close(self):
-        """
-        Close down the game
-        :return: None
-        """
-        pygame.quit()
-
-    # Grid/Board functions
+    #%% Grid/Board functions
     def get_grid(self):
         grid = self.board[2:self.height + 2, 3:self.width + 3]
         return grid
@@ -322,7 +214,6 @@ class Tetris(gym.Env):
         idx = self.full_rows()
         grid = self.get_grid()
         for c in idx:
-            self.lines_cleared += 1
             grid = np.delete(grid, c, 0)  # Remove the cleared row
             grid = np.vstack((np.zeros(10), grid))  # Add an empty row on top
             idx += 1  # Shift remaining clear rows a line down
@@ -330,7 +221,7 @@ class Tetris(gym.Env):
         # Add final result to board
         self.board[2:self.height + 2, 3:self.width + 3] = grid
 
-    # Piece related functions
+    #%% Piece related functions
     def valid_position(self):
         """
         Returns whether the current position is valid.
@@ -368,7 +259,19 @@ class Tetris(gym.Env):
         for c in coords:
             self.board[c] = 1
 
-    # Heuristic calculations
+        return a
+
+    def remove_piece(self):
+        # Find coordinates the current piece inhabits
+        indices = np.where(self.piece.shape == 1)
+        a, b = indices[0] + self.piece.y, indices[1] + self.piece.x
+        coords = zip(a, b)
+
+        # Change the board accordingly
+        for c in coords:
+            self.board[c] = 0
+
+    #%% Heuristic calculations
     def change_in_score(self):
         score = 0
         lines = self.full_rows()
@@ -408,14 +311,6 @@ class Tetris(gym.Env):
             if column.any():
                 height += 20 - np.argmax(column)
         return height
-
-    def get_bumpiness(self):
-        board = self.get_grid()
-        # bumpiness is the measure of the difference in heights between neighbouring columns
-        bumpiness = 0
-        for i in range(9):
-            bumpiness += abs(board[:, i].argmax() - board[:, i + 1].argmax())
-        return bumpiness
 
     def full_rows(self):
         """
@@ -465,9 +360,20 @@ class Tetris(gym.Env):
 
         return total_transitions
 
-    def get_reward(self):
-        return np.array([self.aggregate_height(), self.get_bumpiness(), self.lock_height(), len(
-            self.full_rows()), self.change_in_score(), self.row_transitions(), self.column_transitions()])
+    def eroded_piece_cells(self, y_for_erosion, full_rows):
+        cells = 0
+
+        for coord in y_for_erosion:
+            if coord + 2 in full_rows:  # coords are on board, full_rows on grid
+                cells += 1
+
+        return cells * len(full_rows)
+
+    def get_reward(self, y_for_erosion):
+        full_rows = self.full_rows()
+        return np.array([self.aggregate_height(), self.lock_height(), len(full_rows),
+                         self.change_in_score(), self.row_transitions(), self.column_transitions(),
+                         self.eroded_piece_cells(y_for_erosion, full_rows)])
 
     def search_step(self, action):
         if action == 1:
@@ -510,54 +416,12 @@ class Tetris(gym.Env):
                     if pos not in visited and self.valid_position():
                         visited.add(pos)  # Ensure that we only explore from this specific state once
                         if self.placed():  # We only want to return the final positions
-                            # actions.append(pos)
+                            y_for_erosion = self.place_piece()
                             actions.append(pos)
-                            Features.append(self.get_reward())  # Calculate all the heuristics at this position
+                            Features.append(self.get_reward(
+                                np.unique(y_for_erosion)))  # Calculate all the heuristics at this position
+                            self.remove_piece()
                         else:  # If not a final position, we should explore from it
                             append_list.append(pos)
         self.piece.update_pos(current_pos)
         return actions, Features
-
-    def two_piece_search(self):
-        """
-        Breadth first search, using two lists for the current branches one to loop
-        through and one to append to, one list for all the valid states visited
-        to prevent a case of two steps forward and two steps back infinite looping.
-        If a valid position where the piece is placed is found, its coordinates
-        and rotation are appended to the actions list, and its features are appended
-        to the Features list.
-
-        returns actions and Features lists separately
-        """
-        current_pos = self.piece.get_pos()
-        append_list = [current_pos]
-        visited = set(current_pos)  # The action which lead to a specific position is irrelevant
-        actions = []
-        Features = []
-        actions2 = []
-        Features2 = []
-
-        while len(append_list) > 0:  # Search through all unique states, where piece is not placed
-            loop_list = append_list  # Set the looping list to the appending list
-            append_list = []
-            for state in loop_list:
-                for action in range(1, 6):  # 1 through 5 are valid actions
-                    self.piece.update_pos(state)  # Place the piece in the state from which to explore
-                    self.search_step(action)
-                    pos = self.piece.get_pos()
-                    if pos not in visited and self.valid_position():
-                        visited.add(pos)  # Ensure that we only explore from this specific state once
-                        if self.placed():  # We only want to return the final positions
-                            # actions.append(pos)
-                            actions.append(pos)
-                            Features.append(self.get_reward())  # Calculate all the heuristics at this position
-                            self.second_search()
-                        else:  # If not a final position, we should explore from it
-                            append_list.append(pos)
-        self.piece.update_pos(current_pos)
-        return actions, Features
-
-    def second_search(self):
-
-
-        pass

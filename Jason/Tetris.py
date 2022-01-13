@@ -109,7 +109,6 @@ class Piece:
         self.rotation = (self.rotation + dir) % num_rotations
         self.shape = self.shapes[self.tetromino][self.rotation]
 
-
     def change(self):
         """
         Change current piece to another piece (for debugging)
@@ -136,16 +135,14 @@ class Tetris():
     screen_size = 600
     cell_size = 25
 
+    def __init__(self, board, training, rendering=True):
 
-    def __init__(self, board, training, rendering = True):
-        
-
-        #super(Tetris, self).__init__()
-        #self.action_space = spaces.Discrete(6)
+        # super(Tetris, self).__init__()
+        # self.action_space = spaces.Discrete(6)
         # Observation space contains the board, and an extra row representing the next piece
-        #self.observation_space = spaces.Box(low=0, high=1, shape=(207, 1), dtype=int)
+        # self.observation_space = spaces.Box(low=0, high=1, shape=(207, 1), dtype=int)
 
-        self.training = training    
+        self.training = training
         self.height = 16
         self.width = 10
         self.board = board if len(board) != 0 else self.new_board()
@@ -166,7 +163,6 @@ class Tetris():
         self.width = len(self.board[0]) - 5
         self.top_left_y = self.screen_size / 2 - self.height * self.cell_size / 2
         self.top_left_x = self.screen_size / 2 - self.width * self.cell_size / 2
-
 
         if rendering:
             pygame.font.init()  # init font
@@ -208,9 +204,9 @@ class Tetris():
             if not self.valid_position():
                 self.piece.rotate(False)
         elif action == "lotate":
-                self.piece.rotate(False)
-                if not self.valid_position():
-                    self.piece.rotate(True)
+            self.piece.rotate(False)
+            if not self.valid_position():
+                self.piece.rotate(True)
         elif action == "slam":
             while self.valid_position():
                 self.piece.y += 1
@@ -218,7 +214,6 @@ class Tetris():
             self.new_piece()
         elif action == "change":
             self.piece.change()
-
 
     def valid_position(self):
         """
@@ -234,7 +229,6 @@ class Tetris():
         if np.any(self.piece.shape + sub_board > 1):
             return False
         return True
-
 
     def new_piece(self):
         """
@@ -264,11 +258,11 @@ class Tetris():
         if not self.valid_position():
             if not self.training:
                 self.reset()
-            
+
         return not self.valid_position()
 
     def new_board(self):
-        board = np.zeros([self.height + 2, self.width], dtype = int)
+        board = np.zeros([self.height + 2, self.width], dtype=int)
         wall = np.ones([self.height + 2, 2])
         floor = np.ones([2, self.width + 5])
         board = np.c_[np.ones(self.height + 2), wall, board, wall]
@@ -330,24 +324,23 @@ class Tetris():
                 pygame.draw.rect(self.screen, self.piece.color, square)
 
         # Draw "pieces placed"
-        score_label = self.TXT_FONT.render("Pieces Placed",1,(255,255,255))
+        score_label = self.TXT_FONT.render("Pieces Placed", 1, (255, 255, 255))
         self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 25, 150))
 
         # Draw lines cleared
-        score_label = self.STAT_FONT.render(str(self.pieces_placed),1,(255,255,255))
+        score_label = self.STAT_FONT.render(str(self.pieces_placed), 1, (255, 255, 255))
         self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 70, 180))
-        
+
         # Draw "Highscore"
-        score_label = self.TXT_FONT.render("Highscore",1,(255,255,255))
+        score_label = self.TXT_FONT.render("Highscore", 1, (255, 255, 255))
         self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 40, 50))
-        
+
         # Draw highscore
-        score_label = self.STAT_FONT.render(str(self.highscore),1,(255,255,255))
+        score_label = self.STAT_FONT.render(str(self.highscore), 1, (255, 255, 255))
         self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 70, 80))
 
         # Display
         pygame.display.flip()
-        
 
     def reset(self):
         """
@@ -367,9 +360,8 @@ class Tetris():
         :return: None
         """
         pygame.quit()
-        
 
-#%% Exploration of board 
+    # %% Exploration of board
 
     def get_state(self):
         """
@@ -444,10 +436,10 @@ class Tetris():
 
         self.set_state(temp)
         return final
-    
+
     def get_grid(self):
         return self.board[2:2 + self.height, 3:3 + self.width]
-    
+
     def get_top(self):
         grid = self.get_grid()
         top = len(grid)
@@ -476,35 +468,34 @@ class Tetris():
         first_state = self.get_state()
         top = self.get_top()
         top_state = (first_state[0], top, first_state[2])
-        
+
         queue = [top_state]
         expanded = set()
         step = 0
         while queue:
             expanding_state = queue.pop(0)
-            #print("[{}] {}".format(step, expanding_state))
-            #print("queue: {}".format(queue))
-            #print("expanded: {}".format(expanded))
+            # print("[{}] {}".format(step, expanding_state))
+            # print("queue: {}".format(queue))
+            # print("expanded: {}".format(expanded))
             if expanding_state in expanded:
-                #print("continue\n")
+                # print("continue\n")
                 step += 1
                 continue
 
             self.set_state(expanding_state)
             after_states = self.get_after_states()
-            #print("visited: {}".format(after_states))
+            # print("visited: {}".format(after_states))
             queue += after_states
             expanded.add(expanding_state)
             step += 1
-            #print("")
+            # print("")
 
         # Filter out all non-final states and convert to list
         # (I don't want to check before adding to expanded)
         final_states = [state for state in expanded if self.is_final_state(state)]
 
-        self.set_state(first_state) # Shouldn't have to do this
+        self.set_state(first_state)  # Shouldn't have to do this
         return final_states
-
 
     def get_placed_board(self):
         """
@@ -532,9 +523,8 @@ class Tetris():
         """
         self.set_state(state)
         return self.new_piece()
-    
-    
-#%% Evaulation and heuristics
+
+    # %% Evaulation and heuristics
 
     def board_height(self):
         """Return the height of the board."""
@@ -550,15 +540,15 @@ class Tetris():
         and current column
         """
         holes = 0
-        for x in range(3,13): # Count within visual width
+        for x in range(3, 13):  # Count within visual width
             # cc = current_column, lc = left_column, rc = right_column
-            lc, cc, rc = board[:, x-1], board[:, x], board[:, x+1]
+            lc, cc, rc = board[:, x - 1], board[:, x], board[:, x + 1]
             top = np.argmax(cc)
 
             # Get relevant columns
-            lc_down = lc[top:] #same height, left and down
-            cc_down = cc[top+1:] # below and down
-            rc_down = rc[top:] # same height, right and down
+            lc_down = lc[top:]  # same height, left and down
+            cc_down = cc[top + 1:]  # below and down
+            rc_down = rc[top:]  # same height, right and down
 
             # Revert holes to filled for easy sum
             lc_down = self.negate(lc_down)
@@ -572,7 +562,7 @@ class Tetris():
     def negate(self, arr):
         # Code from stackoverflow.com
         # https://stackoverflow.com/questions/56594598/change-1s-to-0-and-0s-to-1-in-numpy-array-without-looping
-        return np.where((arr==0)|(arr==1), arr^1, arr)
+        return np.where((arr == 0) | (arr == 1), arr ^ 1, arr)
 
     def full_lines(self, board):
         # Get visual part of board
@@ -581,19 +571,18 @@ class Tetris():
         full_lines = np.sum([r.all() for r in grid])
 
         return full_lines
-    
+
     def bumpiness(self, board):
         """
         Bumpiness: The difference in heights between neighbouring columns
         """
-        grid =  board[2:2 + self.height + 1, 3:3 + self.width] # Keep one floor
-        
-        bumpiness = 0
-        for x in range(self.width-1):
-            bumpiness += abs(grid[:, x].argmax() - grid[:, x + 1].argmax())
-            
-        return bumpiness
+        grid = board[2:2 + self.height + 1, 3:3 + self.width]  # Keep one floor
 
+        bumpiness = 0
+        for x in range(self.width - 1):
+            bumpiness += abs(grid[:, x].argmax() - grid[:, x + 1].argmax())
+
+        return bumpiness
 
     def get_evaluations(self, states):
         """
@@ -602,7 +591,7 @@ class Tetris():
         :return: List
         """
         evaluations = []
-        
+
         for state in states:
             self.set_state(state)
             board = self.get_placed_board()
@@ -611,9 +600,7 @@ class Tetris():
             full_lines = self.full_lines(board)
             placing_height = state[1]
             bumpiness = self.bumpiness(board)
-            
-            evaluations.append((holes, full_lines, placing_height, bumpiness))
-        
-        return evaluations
 
-    
+            evaluations.append((holes, full_lines, placing_height, bumpiness))
+
+        return evaluations
