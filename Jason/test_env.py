@@ -27,12 +27,12 @@ board = np.array([[1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
                  [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
                  [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
                  [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
-                 [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1],
-                 [1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1],
+                 [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                 [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
                  [1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1],
                  [1, 1, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1],
                  [1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
-                 [1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1],
+                 [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
                  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
                  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]])
 
@@ -185,7 +185,29 @@ def bumpiness():
 
 #print(bumpiness())
     
+def eroded_cells():
+    grid =  env.board[0:2 + height, 3:3 + width]
+    
+    row = np.array([])
+    for r in range(len(grid)):  
+        if grid[r].all():
+            row = np.append(row, r)
+    
+    # Find y-values the current piece inhabits
+    indices = np.where(env.piece.shape == 1)
+    ys = indices[0] + env.piece.y
+    
+    piece_cells = 0
+    for y in ys:
+        if y in row:
+            piece_cells += 1
+            
+    print(f"rows: {len(row)}")
+    print("piece_cells: {}".format(piece_cells))
+    
+    return piece_cells * len(row)
 
+print(eroded_cells())
 
 
 
@@ -247,7 +269,7 @@ while run:
 
     if action_taken:
         env.step(action)
-
+        print(eroded_cells())
         action_taken = False
         env.render()
         draw()

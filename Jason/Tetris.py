@@ -240,6 +240,7 @@ class Tetris():
         :return: Bool
         """
         self.pieces_placed += 1
+        
 
         # Find coordinates the current piece inhabits
         indices = np.where(self.piece.shape == 1)
@@ -250,6 +251,7 @@ class Tetris():
         # Change the board accordingly
         for c in coords:
             self.board[c] = 1
+        self.score += self.get_change_in_score()
 
         # Get new piece and clear possible lines
         self.piece = self.next_piece
@@ -300,6 +302,36 @@ class Tetris():
         # Add final result to board and increment lines cleared
         self.lines_cleared += len(idx)
         self.board[2:2 + self.height, 3:3 + self.width] = grid
+    
+    def lock_height(self):
+        if self.piece.tetromino < 6:  # all except long bar always need only an offset of 1 or 0 relative to their y
+            if self.piece.shape[2].any():
+                return self.height - self.piece.y - 1
+            else:
+                return self.height - self.piece.y
+        else:  # long bar either needs an offset of 1 or 2
+            if self.piece.shape[2].any():
+                return self.height - self.piece.y - 1
+            else:
+                return self.height - self.piece.y - 2
+    
+    def get_change_in_score(self):
+        score = 0
+        lines = self.full_lines(self.board)
+        
+
+        if lines == 1:
+            score += 40
+        elif lines == 2:
+            score += 100
+        elif lines == 3:
+            score += 300
+        elif lines == 4:
+            score += 1200
+
+        score += self.height - self.lock_height()  # We assume that the AI presses down all the way
+
+        return score
 
     def render(self):
         # Clear the screen
@@ -341,21 +373,29 @@ class Tetris():
         score_label = self.STAT_FONT.render(str(self.highscore), 1, (255, 255, 255))
         self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 70, 80))
         
+        # Draw "Score"
+        score_label = self.TXT_FONT.render("Score", 1, (255, 255, 255))
+        self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 40, 150))
+
+        # Draw score
+        score_label = self.STAT_FONT.render(str(self.score), 1, (255, 255, 255))
+        self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 70, 180))
+        
         # Draw "pieces placed"
         score_label = self.TXT_FONT.render("Pieces Placed", 1, (255, 255, 255))
-        self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 25, 150))
+        self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 25, 250))
 
         # Draw pieces_placed
         score_label = self.STAT_FONT.render(str(self.pieces_placed), 1, (255, 255, 255))
-        self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 70, 180))
+        self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 70, 280))
         
         # Draw "lines cleard"
         score_label = self.TXT_FONT.render("Lines Cleared", 1, (255, 255, 255))
-        self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 25, 250))
+        self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 25, 350))
 
         # Draw lines cleared
         score_label = self.STAT_FONT.render(str(self.lines_cleared), 1, (255, 255, 255))
-        self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 70, 280))
+        self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 70, 380))
 
         
 
@@ -367,8 +407,10 @@ class Tetris():
         Resets game by creating new board and pieces
         :return: None
         """
-        self.highscore = max(self.highscore, self.pieces_placed)
+        self.highscore = max(self.highscore, self.score)
         self.pieces_placed = 0
+        self.score = 0
+        self.lines_cleared = 0
         self.board = self.new_board()
         self.piece = Piece()
         self.next_piece = Piece()
@@ -584,6 +626,11 @@ class Tetris():
         return np.where((arr == 0) | (arr == 1), arr ^ 1, arr)
 
     def full_lines(self, board):
+        """
+        Returns number of full lines.
+        :params board: Board of interest (np.array)
+        :return: Int
+        """
         # Get visual part of board
         grid = board[2:2 + self.height, 3:3 + self.width]
 
@@ -602,6 +649,24 @@ class Tetris():
             bumpiness += abs(grid[:, x].argmax() - grid[:, x + 1].argmax())
 
         return bumpiness
+    
+    def eroded_cells(self, ys, board): # Fuse with full lines
+        grid =  board[0:2 + self.height, 3:3 + self.width]
+        
+        row = np.array([])
+        for r in range(len(grid)):  
+            if grid[r].all():
+                row = np.append(row, r)
+        
+        piece_cells = 0
+        for y in ys:
+            if y in row:
+                piece_cells += 1
+                
+        # print(f"rows: {len(row)}")
+        # print("piece_cells: {}".format(piece_cells))
+        
+        return piece_cells * len(row), len(row)
 
     def get_evaluations(self, states):
         """
@@ -612,14 +677,20 @@ class Tetris():
         evaluations = []
 
         for state in states:
+            # Find y-values the current piece inhabits
+            indices = np.where(self.piece.shape == 1)
+            ys = indices[0] + self.piece.y
+            
             self.set_state(state)
             board = self.get_placed_board()
 
+            eroded_cells, full_lines = self.eroded_cells(ys, board)
+
             holes = self.holes(board)
-            full_lines = self.full_lines(board)
-            placing_height = state[1]
+            # full_lines = self.full_lines(board)
+            lock_height = self.lock_height()
             bumpiness = self.bumpiness(board)
 
-            evaluations.append((holes, full_lines, placing_height, bumpiness))
+            evaluations.append((holes, full_lines, lock_height, bumpiness, eroded_cells))
 
         return evaluations
