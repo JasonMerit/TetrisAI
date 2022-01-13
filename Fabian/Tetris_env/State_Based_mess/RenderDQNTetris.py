@@ -1,5 +1,5 @@
 import numpy as np
-from TetEnv_States import Tetris
+from TetEnv_Rendering import Tetris
 from KerasModel import DQN
 import time
 import pygame
@@ -8,7 +8,7 @@ clock = pygame.time.Clock()
 
 env = Tetris(rendering=True)
 agent = DQN(env=env, epsilon=0)
-# agent.load('SECOND_TRY_25000')
+agent.load('Mess_100_1574')
 actions, Features, score, done, _ = env.reset()
 run = True
 while run:
@@ -33,6 +33,7 @@ while run:
                                 quit()
                             elif event.key == pygame.K_p:
                                 pause = False
+
 
     action, feature = agent.take_action(actions, Features)
     actions, Features, score, done, _ = env.step(action)

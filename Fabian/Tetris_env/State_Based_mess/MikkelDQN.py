@@ -1,7 +1,7 @@
 from torch.nn import Sequential, Linear, ReLU, MSELoss
 from torch.optim import Adam
 import numpy as np
-from TetEnv_States_no_pygame_no_gym import Tetris
+from TetEnv_Training import Tetris
 
 no_states = 7
 buffer_size = 2000
