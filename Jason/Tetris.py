@@ -1,7 +1,9 @@
+# Tetris 
+
 import pygame
+
 import numpy as np
 import random
-
 
 
 class Piece:
@@ -128,18 +130,15 @@ class Tetris():
     detection, as such occationally the a submatrix is constructed.
     """
 
-    # Colors and constand dimenstions
+    # Colors and constant dimenstions
     black = (34, 34, 34)
     grey = (184, 184, 184)
-    pygame.font.init()  # init font
-    TXT_FONT = pygame.font.SysFont("comicsans", 25)
-    STAT_FONT = pygame.font.SysFont("comicsans", 35)
     screen_size = 600
     cell_size = 25
 
 
     def __init__(self, board, training, rendering = True):
-        pygame.init()
+        
 
         #super(Tetris, self).__init__()
         #self.action_space = spaces.Discrete(6)
@@ -170,6 +169,10 @@ class Tetris():
 
 
         if rendering:
+            pygame.font.init()  # init font
+            pygame.init()
+            self.TXT_FONT = pygame.font.SysFont("comicsans", 25)
+            self.STAT_FONT = pygame.font.SysFont("comicsans", 35)
             self.screen = pygame.display.set_mode([self.screen_size, self.screen_size])
             pygame.display.set_caption('Tetris')
             self.background = pygame.Surface(self.screen.get_size())
@@ -215,23 +218,6 @@ class Tetris():
             self.new_piece()
         elif action == "change":
             self.piece.change()
-
-    def board_height(self):
-        """Return the height of the board."""
-        board = self.board[2:22, 3:13]
-        # look for any piece in any row
-        board = board.any(axis=1)
-        # take to sum to determine the height of the board
-        return board.sum()
-
-    def get_bumpiness(self):
-        board = self.board[2:22, 3:13]
-        # bumpiness is the measure of the difference in heights between neighbouring columns
-        bumpiness = 0
-        for i in range(9):
-            bumpiness += abs(board[:, i].argmax() - board[:, i + 1].argmax())
-
-        return bumpiness
 
 
     def valid_position(self):
@@ -279,8 +265,6 @@ class Tetris():
             if not self.training:
                 self.reset()
             
-            
-
         return not self.valid_position()
 
     def new_board(self):
@@ -346,15 +330,24 @@ class Tetris():
                 pygame.draw.rect(self.screen, self.piece.color, square)
 
         # Draw "pieces placed"
-        label = self.TXT_FONT.render("Pieces Placed",1,(255,255,255))
-        self.screen.blit(label, (self.screen_size - label.get_width() - 25, 120))
+        score_label = self.TXT_FONT.render("Pieces Placed",1,(255,255,255))
+        self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 25, 150))
 
         # Draw lines cleared
-        label = self.STAT_FONT.render(str(self.pieces_placed),1,(255,255,255))
-        self.screen.blit(label, (self.screen_size - label.get_width() - 70, 150))
+        score_label = self.STAT_FONT.render(str(self.pieces_placed),1,(255,255,255))
+        self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 70, 180))
+        
+        # Draw "Highscore"
+        score_label = self.TXT_FONT.render("Highscore",1,(255,255,255))
+        self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 40, 50))
+        
+        # Draw highscore
+        score_label = self.STAT_FONT.render(str(self.highscore),1,(255,255,255))
+        self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 70, 80))
 
         # Display
         pygame.display.flip()
+        
 
     def reset(self):
         """
@@ -542,6 +535,14 @@ class Tetris():
     
     
 #%% Evaulation and heuristics
+
+    def board_height(self):
+        """Return the height of the board."""
+        board = self.board[2:22, 3:13]
+        # look for any piece in any row
+        board = board.any(axis=1)
+        # take to sum to determine the height of the board
+        return board.sum()
 
     def holes(self, board):
         """
