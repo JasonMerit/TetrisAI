@@ -307,16 +307,17 @@ class Tetris():
         self.board[2:2 + self.height, 3:3 + self.width] = grid
     
     def lock_height(self):
-        if self.piece.tetromino < 6:  # all except long bar always need only an offset of 1 or 0 relative to their y
-            if self.piece.shape[2].any():
-                return self.height - self.piece.y - 1
-            else:
-                return self.height - self.piece.y
-        else:  # long bar either needs an offset of 1 or 2
-            if self.piece.shape[2].any():
-                return self.height - self.piece.y - 1
-            else:
-                return self.height - self.piece.y - 2
+        """
+        Determine vertical distance to floor for current piece.
+        :return: Int
+        """        
+        # All pieces inhabit their center row, so only check if last row contains any
+        last_row_contains = int(self.piece.shape[-1].any())
+        
+        if self.piece.tetromino < 5:  
+            return self.height - self.piece.y - last_row_contains
+        else: # Longbar and square exception
+            return self.height - self.piece.y - last_row_contains - 1
     
     def get_change_in_score(self):
         lines = self.full_lines(self.board)
@@ -588,7 +589,7 @@ class Tetris():
         # take to sum to determine the height of the board
         return board.sum()
 
-    def holes(self, board):
+    def old_holes(self, board):
         """
         Hole is any empty space below the top full cell on neihbours
         and current column
@@ -609,11 +610,11 @@ class Tetris():
             cc_down = self.negate(cc_down)
             rc_down = self.negate(rc_down)
 
-            holes += sum(lc_down) + sum(cc_down) + sum(rc_down)
+            holes += sum(lc_down) #+ sum(cc_down) + sum(rc_down) #Bible definition debug
 
         return holes
 
-    def negate(self, arr):
+    def negate(self, arr): #debug (not used with new definition)
         # Code from stackoverflow.com
         # https://stackoverflow.com/questions/56594598/change-1s-to-0-and-0s-to-1-in-numpy-array-without-looping
         return np.where((arr == 0) | (arr == 1), arr ^ 1, arr)
@@ -643,13 +644,17 @@ class Tetris():
 
         return bumpiness
     
-    def eroded_cells(self, ys, board): # Fuse with full lines
+    def eroded_cells(self, board): # Fuse with full lines
         grid =  board[0:2 + self.height, 3:3 + self.width]
         
         row = np.array([])
         for r in range(len(grid)):  
             if grid[r].all():
                 row = np.append(row, r)
+        
+        # Find y-values the current piece inhabits
+        indices = np.where(self.piece.shape == 1)
+        ys = indices[0] + self.piece.y
         
         piece_cells = 0
         for y in ys:
@@ -661,6 +666,119 @@ class Tetris():
         # print("eroded_cells: {}".format(piece_cells * len(row)))
         
         return piece_cells * len(row), len(row)
+    
+    def column_transitions(self, board):
+        """
+        Column transitions are the number of adjacent empty and full cells
+        within a column. The transition from highest solid to empty above is ignored,
+        likewise the transition from bottom row to floor. 
+        :params board: Board of interest (np.array)
+        :return: Int
+        """    
+        total_transitions = 0
+        grid = board[2:2 + self.height, 3:3 + self.width]
+        for column in range(self.width):
+            if grid[:, column].any(): # Skip empty columns
+                top = np.argmax(grid[:, column])
+                previous_square = 1
+                for y in range(top, self.height):
+                    if grid[y, column] != previous_square:
+                        total_transitions += 1
+                        previous_square = int(not previous_square)
+
+        return total_transitions
+
+    # print(column_transitions())
+
+    def row_transitions(self, board):
+        """
+        Row transitions are the number of adjacent empty and full cells
+        within a row. The transitions between the wall and grid are included.
+        Empty rows do not contribute to the sum.
+        :params board: Board of interest (np.array)
+        :return: Int
+        """ 
+        total_transitions = 0
+        grid = board[2:2 + self.height, 2:4 + self.width] # Include both walls
+        for index, row in enumerate(grid):
+            if row[1:-1].any(): # Skip empty rows
+                previous_square = 1
+                for x in range(len(row)):
+                    if grid[index, x] != previous_square:
+                        total_transitions += 1
+                        previous_square = int(not previous_square)
+
+        return total_transitions
+    
+    def cum_wells(self, board):
+        """
+        Given a well, take a sum over each cell within the well. 
+        The value of the cell will be the depth w.r.t. the well. 
+        E.g. a well of depth 3 will have the sum 1+2+3=6
+
+        Start from the second column to first wall (inclusive),
+        find highest full cell, check sandwich for empty cells left and down,
+        """
+        well = 0
+        grid = board[2:-2, 2:-1] # Cut off floor and keep one wall on either side
+        for x in range(2,12): # Second column to first wall
+            # c = coumn, lc = left_column
+            c, lc = grid[:, x], grid[:, x-1]
+            
+            top_c = np.argmax(c)
+            top_lc = np.argmax(lc)
+            if top_lc <= top_c: # No well for column x
+                continue
+        
+            # Iterate down through empty left column and check for sandwich
+            depth, is_full = 0, lc[top_c]
+            while not is_full:
+                if self.sandwiched(x-1, top_c + depth, grid):
+                    well += depth + 1 # 0 indexing
+                else:
+                    top_c += depth + 1 # Reset to new well in same column
+                    depth = -1
+                    
+                depth += 1
+                is_full = lc[top_c + depth]
+
+        return well
+    
+    def sandwiched(self, x, y, grid):
+        left = grid[y, x-1]
+        right = grid[y, x+1]
+        return left and right
+    
+    def holes_depth_and_row_holes(self, board):
+        """
+        Hole is any empty space below a any full cell
+        Hole depth is vertical distance of full cells above hole
+        """
+        holes = 0
+        hole_depth = 0
+        row_holes = set()
+        grid = board[2:2 + self.height, 3:3 + self.width]
+        
+        for x in range(len(grid[0])): # Iterate through columns
+            c = grid[:, x]
+            
+            # Get relevant part of column
+            top = np.argmax(c)
+            
+            c_down = c[top:]
+            
+            # Find indice and amount of holes within column
+            indice = np.where(c_down == 0)[0]
+            # print(indice+top+2)
+            c_holes = len(indice)
+            row_holes = row_holes.union(set(indice+top+2))
+            if c_holes == 0: # Zero holes
+                continue
+            
+            holes += c_holes
+            hole_depth += sum(indice) - c_holes + 1   
+
+        return holes, hole_depth, len(row_holes)
 
     def get_evaluations(self, states):
         """
@@ -670,21 +788,28 @@ class Tetris():
         """
         evaluations = []
 
-        for state in states:
-            # Find y-values the current piece inhabits
-            indices = np.where(self.piece.shape == 1)
-            ys = indices[0] + self.piece.y
-            
-            self.set_state(state)
-            board = self.get_placed_board()
+        for state in states:       
+            self.set_state(state) # Set piece to state
+            board = self.get_placed_board() # Place piece
 
-            eroded_cells, full_lines = self.eroded_cells(ys, board)
+            # eroded_cells, full_lines = self.eroded_cells(board)
 
-            holes = self.holes(board)
+            # holes = self.holes(board)
             # full_lines = self.full_lines(board)
-            lock_height = self.lock_height()
-            bumpiness = self.bumpiness(board)
+            # lock_height = self.lock_height()
+            # bumpiness = self.bumpiness(board)
+            # holes, hole_depth = self.holes_and_depth(board)
 
-            evaluations.append((holes, full_lines, lock_height, bumpiness, eroded_cells))
+            # evaluations.append((holes, full_lines, lock_height, bumpiness, eroded_cells))
+            
+            lock_height = self.lock_height() # Is it ok that board is placed? - not used
+            eroded_cells, _ = self.eroded_cells(board)
+            r_trans = self.row_transitions(board)
+            c_trans = self.column_transitions(board)
+            cum_wells = self.cum_wells(board)
+            holes, hole_depth, r_holes = self.holes_depth_and_row_holes(board)
+            
+            evaluations.append(np.array([lock_height, eroded_cells, r_trans, c_trans, 
+                                holes, cum_wells, hole_depth, r_holes]))
 
         return evaluations
