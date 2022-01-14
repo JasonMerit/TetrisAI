@@ -10,10 +10,9 @@ import os
 os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (40,40)
 
 h_flip = False
-x, y = 3, 11
+x, y = 3, 5#11
 
 circles = []
-
 
 board = np.array([[1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
                  [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
@@ -26,12 +25,12 @@ board = np.array([[1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
                  [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
                  [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
                  [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
-                 [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
-                 [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-                 [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-                 [1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1],
-                 [1, 1, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1],
-                 [1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
+                 [1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+                 [1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1],
+                 [1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                 [1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1],
+                 [1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1],
+                 [1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1],
                  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
                  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
                  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]])
@@ -81,16 +80,55 @@ def well_cells():
 
     return well
 
-def sandwiched(x, y):
-    left = env.board[y, x-1]
-    right = env.board[y, x+1]
+def sandwiched(x, y, grid):
+    left = grid[y, x-1]
+    right = grid[y, x+1]
     return left and right
+
+def cum_wells():
+    """
+    Given a well, take a sum over each cell within the well. 
+    The value of the cell will be the depth w.r.t. the well. 
+    E.g. a well of depth 3 will have the sum 1+2+3=6
+
+    Start from the second column to first wall (inclusive),
+    find highest full cell, check sandwich for empty cells left and down,
+    """
+    well = 0
+    grid = env.board[2:-2, 2:-1] # Cut off floor and keep one wall on either side
+    for x in range(2,12): # Second column to first wall
+        # c = coumn, lc = left_column
+        c, lc = grid[:, x], grid[:, x-1]
+        
+        top_c = np.argmax(c)
+        top_lc = np.argmax(lc)
+        if top_lc <= top_c: # No well for column x
+            continue
+    
+        # Iterate down through empty left column and check for sandwich
+        depth, is_full = 0, lc[top_c]
+        while not is_full:
+            if sandwiched(x-1, top_c + depth, grid):
+                circles.append((x+1, top_c + depth+2))
+                well += depth + 1 # 0 indexing
+            else:
+                top_c += depth + 1 # Reset to new well in same column
+                depth = -1
+                
+            depth += 1
+            is_full = lc[top_c + depth]
+
+    return well
+# print(cum_wells())
+
+
+
 
 def draw():
     # Draw circles
     for x, y in circles:
         center = (env.top_left_x + env.cell_size*(x-2.5), env.top_left_y + env.cell_size*(y-1.5))
-        env.pygame.draw.circle(env.screen, env.grey, center, 8)
+        pygame.draw.circle(env.screen, env.grey, center, 8)
     
     # Draw axis
     for y in range(height):
@@ -108,7 +146,7 @@ def draw():
 
 #print(well_cells())
 
-def holes():
+def old_holes():
     """
     Hole is any empty space below the top full cell on neihbours
     and current column
@@ -128,10 +166,45 @@ def holes():
         lc_down = negate(lc_down)
         cc_down = negate(cc_down)
         rc_down = negate(rc_down)
+        
+        print(cc_down)
 
-        holes += sum(lc_down) + sum(cc_down) + sum(rc_down)
+        holes += sum(cc_down) #+ sum(lc_down) + sum(rc_down)
 
     return holes
+
+def holes_depth_and_row_holes():
+    """
+    Hole is any empty space below a any full cell
+    Hole depth is vertical distance of full cells above hole
+    """
+    holes = 0
+    hole_depth = 0
+    row_holes = set()
+    grid = get_grid()
+    
+    for x in range(len(grid[0])): # Iterate through columns
+        c = grid[:, x]
+        
+        # Get relevant part of column
+        top = np.argmax(c)
+        
+        c_down = c[top:]
+        
+        # Find indice and amount of holes within column
+        indice = np.where(c_down == 0)[0]
+        # print(indice+top+2)
+        c_holes = len(indice)
+        row_holes = row_holes.union(set(indice+top+2))
+        if c_holes == 0: # Zero holes
+            continue
+        
+        holes += c_holes
+        hole_depth += sum(indice) - c_holes + 1   
+
+    return holes, hole_depth, len(row_holes)
+
+print(holes_depth_and_row_holes())
 
 def negate(arr):
     # https://stackoverflow.com/questions/56594598/change-1s-to-0-and-0s-to-1-in-numpy-array-without-looping
@@ -207,9 +280,65 @@ def eroded_cells():
     
     return piece_cells * len(row)
 
-print(eroded_cells())
+# print(eroded_cells())
 
+def lock_height():
+    """
+    Determine vertical distance to floor for current piece.
+    :return: Int
+    """        
+    # All pieces inhabit their center row, so only check if last row contains any
+    last_row_contains = int(env.piece.shape[-1].any())
+    
+    if env.piece.tetromino < 5:  
+        return env.height - env.piece.y - last_row_contains
+    else: # Longbar and square exception
+        return env.height - env.piece.y - last_row_contains - 1
 
+# print(lock_height())
+
+def column_transitions():
+    """
+    Column transitions are the number of adjacent empty and full cells
+    within a column. The transition from highest solid to empty above is ignored,
+    likewise the transition from bottom row to floor. 
+    :return: Int
+    """    
+    total_transitions = 0
+    board = get_grid()
+    for column in range(env.width):
+        if board[:, column].any(): # Skip empty columns
+            top = np.argmax(board[:, column])
+            previous_square = 1
+            for y in range(top, env.height):
+                if board[y, column] != previous_square:
+                    total_transitions += 1
+                    previous_square = int(not previous_square)
+
+    return total_transitions
+
+# print(column_transitions())
+
+def row_transitions():
+    """
+    Row transitions are the number of adjacent empty and full cells
+    within a row. The transitions between the wall and grid are included.
+    Empty rows do not contribute to the sum.
+    :return: Int
+    """ 
+    total_transitions = 0
+    grid = env.board[2:2 + env.height, 2:4 + env.width] # Include both walls
+    for index, row in enumerate(grid):
+        if row[1:-1].any(): # Skip empty rows
+            previous_square = 1
+            for x in range(len(row)):
+                if grid[index, x] != previous_square:
+                    total_transitions += 1
+                    previous_square = int(not previous_square)
+
+    return total_transitions
+
+# print(row_transitions())
 
 
 env.render()
@@ -248,8 +377,9 @@ while run:
             elif event.key == pygame.K_r:
                 env.reset()
             elif event.key == pygame.K_t: # TEST HERE
-                states = env.get_final_states()
-                cycle_states(states)
+                # states = env.get_final_states()
+                # cycle_states(states)
+                print(row_transitions())
             elif event.key == pygame.K_p:
                 pause = True
                 while pause:
@@ -269,7 +399,7 @@ while run:
 
     if action_taken:
         env.step(action)
-        print(eroded_cells())
+        # print(eroded_cells())
         action_taken = False
         env.render()
         draw()

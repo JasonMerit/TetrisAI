@@ -7,14 +7,17 @@ Created on Fri Jan 14 08:57:47 2022
 
 import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
 
-plt.rcParams["figure.figsize"] = [7.50, 3.50]
-plt.rcParams["figure.autolayout"] = True
+df = pd.read_csv('Trials_13_eve.csv')
 
-headers = ['Name', 'Age', 'Marks']
+data = np.array(df)
 
-df = pd.read_csv('Training_13_evening.csv', names=headers)
+X = np.arange(1, len(data)) * 10
+print(len(X))
+Y = data[1:, 1]
 
-df.set_index('Name').plot()
-
-plt.show()
+plt.plot(X, Y)
+plt.xlabel("Generation")
+plt.ylabel("avg_pieces_placed")
+plt.show

@@ -69,10 +69,10 @@ def eval_genomes(genomes, config):
             # Go to best scored state
             best_index = outputs.index(max(outputs))
             best_state = states[best_index]
-            done, change_score = env.place_state(best_state)
+            done, reward = env.place_state(best_state)
 
             # Update fitness and remove if done
-            ge[x].fitness = int(env.score)
+            ge[x].fitness += int(reward)
             rem[x] = done
             total_pp += 1
         
