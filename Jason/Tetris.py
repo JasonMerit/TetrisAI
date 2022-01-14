@@ -147,6 +147,7 @@ class Tetris():
         self.pieces_placed = 0
         self.lines_cleared = 0
         self.score = 0 # wHAT SHOULD score be measured as?
+        self.dict_lines_score = {0:0, 1:40, 2:100, 3:300, 4:1200}
         self.highscore = 0
 
         self.current_score = 0
@@ -251,7 +252,9 @@ class Tetris():
         # Change the board accordingly
         for c in coords:
             self.board[c] = 1
-        self.score += self.get_change_in_score()
+        
+        change_score = self.get_change_in_score()
+        self.score += change_score
 
         # Get new piece and clear possible lines
         self.piece = self.next_piece
@@ -265,7 +268,7 @@ class Tetris():
         if game_over and not self.training:
             self.reset()
 
-        return game_over
+        return game_over, change_score
 
     def new_board(self):
         """
@@ -316,19 +319,9 @@ class Tetris():
                 return self.height - self.piece.y - 2
     
     def get_change_in_score(self):
-        score = 0
         lines = self.full_lines(self.board)
         
-
-        if lines == 1:
-            score += 40
-        elif lines == 2:
-            score += 100
-        elif lines == 3:
-            score += 300
-        elif lines == 4:
-            score += 1200
-
+        score = self.dict_lines_score[lines]
         score += self.height - self.lock_height()  # We assume that the AI presses down all the way
         
         return score
