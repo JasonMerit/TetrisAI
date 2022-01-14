@@ -15,7 +15,7 @@ MINIBATCH_SIZE = 64
 
 
 class DQN:
-    def __init__(self, env, state_size=8, discount=0.99, epsilon=1, epsilon_min=0.0001, epsilon_decay=0.9995):
+    def __init__(self, env, state_size=5, discount=0.99, epsilon=1, epsilon_min=0.0001, epsilon_decay=0.9999):
         self.state_size = state_size
         self.model = self.create_model()
         self.discount = discount
@@ -28,11 +28,13 @@ class DQN:
     def create_model(self):
         """Returns a new model."""
         model = tf.keras.models.Sequential([
-            Dense(16, input_dim=self.state_size, activation='relu'),
+            Dense(32, input_dim=self.state_size, activation='relu'),
             Dense(1, activation='linear'),
         ])
 
-        model.compile(optimizer='adam',
+        optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
+
+        model.compile(optimizer=optimizer,
                       loss='mse',
                       metrics=['mean_squared_error'])
 
@@ -88,19 +90,16 @@ class DQN:
             done = False
             # set the Features from a new game arbitrarily to zero
             current_features = np.zeros(len(Features_list[0]), dtype=np.int64)
-            current_score = 0
             while not done:     # Tetris is done when there are no valid actions left
                 steps += 1
                 action, future_features = self.take_action(states, Features_list)
-                done = self.env.place_state(action)
-                score = self.env.get_score()
+                done, reward = self.env.place_state(action)
 
                 states = self.env.get_final_states()
                 Features_list = self.env.get_evaluations(states)
 
-                self.replay_memory.append((current_features, score, done, future_features))
+                self.replay_memory.append((current_features, reward, done, future_features))
                 current_features = future_features
-                current_score += score
 
             self.learn()
 
