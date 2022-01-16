@@ -29,7 +29,6 @@ class DQN:
         """Returns a new model."""
         model = tf.keras.models.Sequential([
             Dense(32, input_dim=self.state_size, activation='relu'),
-            Dense(32, activation='relu'),
             Dense(1, activation='linear'),
         ])
 

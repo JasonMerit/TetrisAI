@@ -79,7 +79,7 @@ class Piece:
                    [0, 0, 1, 0]]])
 
     shapes = [S, Z, T, L, J, O, I]
-    shape_colors = [(0, 255, 0), (255, 0, 0), (128, 0, 128), 
+    shape_colors = [(0, 255, 0), (255, 0, 0), (128, 0, 128),
                     (255, 165, 0), (0, 0, 255), (255, 255, 0), (0, 255, 255)]
 
     def __init__(self):
@@ -108,7 +108,7 @@ class Piece:
         self.rotation = (self.rotation + dir) % num_rotations
         self.shape = self.shapes[self.tetromino][self.rotation]
 
-    def change(self): # debugging
+    def change(self):  # debugging
         """
         Change current piece to another piece (for debugging)
         :return: None
@@ -136,7 +136,7 @@ class Tetris():
     cell_size = 25
 
     # board is for debugging (remember to delete redefinition of height and width)
-    def __init__(self, training, board = [], rendering=False):
+    def __init__(self, training, board=[], rendering=False):
         self.training = training
         self.height = 16
         self.width = 10
@@ -146,8 +146,8 @@ class Tetris():
 
         self.pieces_placed = 0
         self.lines_cleared = 0
-        self.score = 0 # wHAT SHOULD score be measured as?
-        self.dict_lines_score = {0:0, 1:40, 2:100, 3:300, 4:1200}
+        self.score = 0  # wHAT SHOULD score be measured as?
+        self.dict_lines_score = {0: 0, 1: 40, 2: 100, 3: 300, 4: 1200}
         self.highscore = 0
 
         self.current_score = 0
@@ -159,20 +159,20 @@ class Tetris():
             # Initialize pygame and fonts
             pygame.init()
             pygame.font.init()
-            
+
             # Rendering Dimensions
             self.height = len(self.board) - 4
             self.width = len(self.board[0]) - 5
             self.top_left_y = self.screen_size / 2 - self.height * self.cell_size / 2
             self.top_left_x = self.screen_size / 2 - self.width * self.cell_size / 2
-            
+
             # Rendering objects
             self.TXT_FONT = pygame.font.SysFont("comicsans", 20)
             self.STAT_FONT = pygame.font.SysFont("comicsans", 35)
             self.screen = pygame.display.set_mode([self.screen_size, self.screen_size])
             pygame.display.set_caption('Tetris')
             self.background = pygame.Surface(self.screen.get_size())
-            
+
     def get_grid(self):
         return self.board[2:2 + self.height, 3:3 + self.width]
 
@@ -241,7 +241,6 @@ class Tetris():
         :return: Bool
         """
         self.pieces_placed += 1
-        
 
         # Find coordinates the current piece inhabits
         indices = np.where(self.piece.shape == 1)
@@ -252,7 +251,7 @@ class Tetris():
         # Change the board accordingly
         for c in coords:
             self.board[c] = 1
-        
+
         change_score = self.get_change_in_score()
         self.score += change_score
 
@@ -260,10 +259,10 @@ class Tetris():
         self.piece = self.next_piece
         self.next_piece = Piece()
         self.clear_lines()
-        
+
         # Game over if spawning piece is overlapping
         game_over = not self.valid_position()
-        
+
         # Reset game if not training
         if game_over and not self.training:
             self.reset()
@@ -275,7 +274,7 @@ class Tetris():
         Return an empty (width x height) 2d array enclosed by walls
         (3 left, 2 right) and a 2 deep floor and a 2 tall open ceiling
         
-        """        
+        """
         board = np.zeros([self.height + 2, self.width])
         wall = np.ones([self.height + 2, 2])
         floor = np.ones([2, self.width + 5])
@@ -305,25 +304,26 @@ class Tetris():
         # Add final result to board and increment lines cleared
         self.lines_cleared += len(idx)
         self.board[2:2 + self.height, 3:3 + self.width] = grid
-    
+
     def lock_height(self):
-        if self.piece.tetromino < 6:  # all except long bar always need only an offset of 1 or 0 relative to their y
-            if self.piece.shape[2].any():
-                return self.height - self.piece.y - 1
-            else:
-                return self.height - self.piece.y
-        else:  # long bar either needs an offset of 1 or 2
-            if self.piece.shape[2].any():
-                return self.height - self.piece.y - 1
-            else:
-                return self.height - self.piece.y - 2
-    
+        """
+        Determine vertical distance to floor for current piece.
+        :return: Int
+        """
+        # All pieces inhabit their center row, so only check if last row contains any
+        last_row_contains = int(self.piece.shape[-1].any())
+
+        if self.piece.tetromino < 5:
+            return self.height - self.piece.y - last_row_contains
+        else:  # Longbar and square exception
+            return self.height - self.piece.y - last_row_contains - 1
+
     def get_change_in_score(self):
         lines = self.full_lines(self.board)
-        
+
         score = self.dict_lines_score[lines]
         score += self.height - self.lock_height()  # We assume that the AI presses down all the way
-        
+
         return score
 
     def render(self):
@@ -365,7 +365,7 @@ class Tetris():
         # Draw highscore
         score_label = self.STAT_FONT.render(str(self.highscore), 1, (255, 255, 255))
         self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 70, 80))
-        
+
         # Draw "Score"
         score_label = self.TXT_FONT.render("Score", 1, (255, 255, 255))
         self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 40, 150))
@@ -373,7 +373,7 @@ class Tetris():
         # Draw score
         score_label = self.STAT_FONT.render(str(self.score), 1, (255, 255, 255))
         self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 70, 180))
-        
+
         # Draw "pieces placed"
         score_label = self.TXT_FONT.render("Pieces Placed", 1, (255, 255, 255))
         self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 25, 250))
@@ -381,7 +381,7 @@ class Tetris():
         # Draw pieces_placed
         score_label = self.STAT_FONT.render(str(self.pieces_placed), 1, (255, 255, 255))
         self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 70, 280))
-        
+
         # Draw "lines cleard"
         score_label = self.TXT_FONT.render("Lines Cleared", 1, (255, 255, 255))
         self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 25, 350))
@@ -389,8 +389,6 @@ class Tetris():
         # Draw lines cleared
         score_label = self.STAT_FONT.render(str(self.lines_cleared), 1, (255, 255, 255))
         self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 70, 380))
-
-        
 
         # Display
         pygame.display.flip()
@@ -407,7 +405,7 @@ class Tetris():
         self.board = self.new_board()
         self.piece = Piece()
         self.next_piece = Piece()
-        self.shift_piece = None # debugging
+        self.shift_piece = None  # debugging
 
     def close(self):
         """
@@ -428,7 +426,7 @@ class Tetris():
     def set_state(self, state):
         """
         Sets current piece to given state
-        """        
+        """
         self.piece.x = state[0]
         self.piece.y = state[1]
         self.piece.rotation = state[2]
@@ -526,7 +524,7 @@ class Tetris():
 
         queue = [top_state]
         expanded = set()
-        step = 0 # debugging (and prints)
+        step = 0  # debugging (and prints)
         while queue:
             expanding_state = queue.pop(0)
             # print("[{}] {}".format(step, expanding_state))
@@ -588,7 +586,7 @@ class Tetris():
         # take to sum to determine the height of the board
         return board.sum()
 
-    def holes(self, board):
+    def old_holes(self, board):
         """
         Hole is any empty space below the top full cell on neihbours
         and current column
@@ -609,11 +607,11 @@ class Tetris():
             cc_down = self.negate(cc_down)
             rc_down = self.negate(rc_down)
 
-            holes += sum(lc_down) + sum(cc_down) + sum(rc_down)
+            holes += sum(lc_down)  # + sum(cc_down) + sum(rc_down) #Bible definition debug
 
         return holes
 
-    def negate(self, arr):
+    def negate(self, arr):  # debug (not used with new definition)
         # Code from stackoverflow.com
         # https://stackoverflow.com/questions/56594598/change-1s-to-0-and-0s-to-1-in-numpy-array-without-looping
         return np.where((arr == 0) | (arr == 1), arr ^ 1, arr)
@@ -642,25 +640,142 @@ class Tetris():
             bumpiness += abs(grid[:, x].argmax() - grid[:, x + 1].argmax())
 
         return bumpiness
-    
-    def eroded_cells(self, ys, board): # Fuse with full lines
-        grid =  board[0:2 + self.height, 3:3 + self.width]
-        
+
+    def eroded_cells(self, board):  # Fuse with full lines
+        grid = board[0:2 + self.height, 3:3 + self.width]
+
         row = np.array([])
-        for r in range(len(grid)):  
+        for r in range(len(grid)):
             if grid[r].all():
                 row = np.append(row, r)
-        
+
+        # Find y-values the current piece inhabits
+        indices = np.where(self.piece.shape == 1)
+        ys = indices[0] + self.piece.y
+
         piece_cells = 0
         for y in ys:
             if y in row:
                 piece_cells += 1
-                
+
         # print(f"rows: {len(row)}")
         # print("piece_cells: {}".format(piece_cells))
         # print("eroded_cells: {}".format(piece_cells * len(row)))
-        
+
         return piece_cells * len(row), len(row)
+
+    def column_transitions(self, board):
+        """
+        Column transitions are the number of adjacent empty and full cells
+        within a column. The transition from highest solid to empty above is ignored,
+        likewise the transition from bottom row to floor. 
+        :params board: Board of interest (np.array)
+        :return: Int
+        """
+        total_transitions = 0
+        grid = board[2:2 + self.height, 3:3 + self.width]
+        for column in range(self.width):
+            if grid[:, column].any():  # Skip empty columns
+                top = np.argmax(grid[:, column])
+                previous_square = 1
+                for y in range(top, self.height):
+                    if grid[y, column] != previous_square:
+                        total_transitions += 1
+                        previous_square = int(not previous_square)
+
+        return total_transitions
+
+    # print(column_transitions())
+
+    def row_transitions(self, board):
+        """
+        Row transitions are the number of adjacent empty and full cells
+        within a row. The transitions between the wall and grid are included.
+        Empty rows do not contribute to the sum.
+        :params board: Board of interest (np.array)
+        :return: Int
+        """
+        total_transitions = 0
+        grid = board[2:2 + self.height, 2:4 + self.width]  # Include both walls
+        for index, row in enumerate(grid):
+            if row[1:-1].any():  # Skip empty rows
+                previous_square = 1
+                for x in range(len(row)):
+                    if grid[index, x] != previous_square:
+                        total_transitions += 1
+                        previous_square = int(not previous_square)
+
+        return total_transitions
+
+    def cum_wells(self, board):
+        """
+        Given a well, take a sum over each cell within the well. 
+        The value of the cell will be the depth w.r.t. the well. 
+        E.g. a well of depth 3 will have the sum 1+2+3=6
+
+        Start from the second column to first wall (inclusive),
+        find highest full cell, check sandwich for empty cells left and down,
+        """
+        well = 0
+        grid = board[2:-2, 2:-1]  # Cut off floor and keep one wall on either side
+        for x in range(2, 12):  # Second column to first wall
+            # c = coumn, lc = left_column
+            c, lc = grid[:, x], grid[:, x - 1]
+
+            top_c = np.argmax(c)
+            top_lc = np.argmax(lc)
+            if top_lc <= top_c:  # No well for column x
+                continue
+
+            # Iterate down through empty left column and check for sandwich
+            depth, is_full = 0, lc[top_c]
+            while not is_full:
+                if self.sandwiched(x - 1, top_c + depth, grid):
+                    well += depth + 1  # 0 indexing
+                else:
+                    top_c += depth + 1  # Reset to new well in same column
+                    depth = -1
+
+                depth += 1
+                is_full = lc[top_c + depth]
+
+        return well
+
+    def sandwiched(self, x, y, grid):
+        left = grid[y, x - 1]
+        right = grid[y, x + 1]
+        return left and right
+
+    def holes_depth_and_row_holes(self, board):
+        """
+        Hole is any empty space below a any full cell
+        Hole depth is vertical distance of full cells above hole
+        """
+        holes = 0
+        hole_depth = 0
+        row_holes = set()
+        grid = board[2:2 + self.height, 3:3 + self.width]
+
+        for x in range(len(grid[0])):  # Iterate through columns
+            c = grid[:, x]
+
+            # Get relevant part of column
+            top = np.argmax(c)
+
+            c_down = c[top:]
+
+            # Find indice and amount of holes within column
+            indice = np.where(c_down == 0)[0]
+            # print(indice+top+2)
+            c_holes = len(indice)
+            row_holes = row_holes.union(set(indice + top + 2))
+            if c_holes == 0:  # Zero holes
+                continue
+
+            holes += c_holes
+            hole_depth += sum(indice) - c_holes + 1
+
+        return holes, hole_depth, len(row_holes)
 
     def get_evaluations(self, states):
         """
@@ -671,20 +786,27 @@ class Tetris():
         evaluations = []
 
         for state in states:
-            # Find y-values the current piece inhabits
-            indices = np.where(self.piece.shape == 1)
-            ys = indices[0] + self.piece.y
-            
-            self.set_state(state)
-            board = self.get_placed_board()
+            self.set_state(state)  # Set piece to state
+            board = self.get_placed_board()  # Place piece
 
-            eroded_cells, full_lines = self.eroded_cells(ys, board)
+            # eroded_cells, full_lines = self.eroded_cells(board)
 
-            holes = self.holes(board)
+            # holes = self.holes(board)
             # full_lines = self.full_lines(board)
-            lock_height = self.lock_height()
-            bumpiness = self.bumpiness(board)
+            # lock_height = self.lock_height()
+            # bumpiness = self.bumpiness(board)
+            # holes, hole_depth = self.holes_and_depth(board)
 
-            evaluations.append((holes, full_lines, lock_height, bumpiness, eroded_cells))
+            # evaluations.append((holes, full_lines, lock_height, bumpiness, eroded_cells))
+
+            lock_height = self.lock_height()  # Is it ok that board is placed? - not used
+            eroded_cells, _ = self.eroded_cells(board)
+            r_trans = self.row_transitions(board)
+            c_trans = self.column_transitions(board)
+            cum_wells = self.cum_wells(board)
+            holes, hole_depth, r_holes = self.holes_depth_and_row_holes(board)
+
+            evaluations.append(np.array([lock_height, eroded_cells, r_trans, c_trans,
+                                         holes, cum_wells, hole_depth, r_holes]))
 
         return evaluations

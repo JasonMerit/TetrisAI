@@ -13,8 +13,8 @@ fps = 15
 
 env = Tetris(training=False, rendering=rendering)
 
-agent = DQN(env, state_size=5, epsilon=0)
-agent.load('32x2_24000_1149683')
+agent = DQN(env, state_size=8, epsilon=0)
+agent.load('FORFUN32_50000')
 
 clock = pygame.time.Clock()
 
@@ -61,7 +61,6 @@ while run:
 
     # Pass the evaluation for each state into the NN
     action, features = agent.take_action(states, evaluations)
-    print(features)
     # Go to best scored state
     done = env.place_state(action)
 
