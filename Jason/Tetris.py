@@ -136,8 +136,9 @@ class Tetris():
     cell_size = 25
 
     # board is for debugging (remember to delete redefinition of height and width)
-    def __init__(self, training, board = [], rendering=False):
+    def __init__(self, training, seed = None, board = [], rendering=False):
         self.training = training
+        random.seed(seed)
         self.height = 16
         self.width = 10
         self.board = board if len(board) != 0 else self.new_board()
@@ -753,6 +754,7 @@ class Tetris():
         """
         Hole is any empty space below a any full cell
         Hole depth is vertical distance of full cells above hole
+        Row holes are number of rows with at least one occurrence of holes
         """
         holes = 0
         hole_depth = 0
@@ -771,7 +773,7 @@ class Tetris():
             indice = np.where(c_down == 0)[0]
             # print(indice+top+2)
             c_holes = len(indice)
-            row_holes = row_holes.union(set(indice+top+2))
+            row_holes = row_holes.union(set(indice+top))
             if c_holes == 0: # Zero holes
                 continue
             
@@ -802,14 +804,16 @@ class Tetris():
 
             # evaluations.append((holes, full_lines, lock_height, bumpiness, eroded_cells))
             
-            lock_height = self.lock_height() # Is it ok that board is placed? - not used
+            lock_height = self.lock_height() # Note that placed board is not used here
             eroded_cells, _ = self.eroded_cells(board)
             r_trans = self.row_transitions(board)
             c_trans = self.column_transitions(board)
             cum_wells = self.cum_wells(board)
             holes, hole_depth, r_holes = self.holes_depth_and_row_holes(board)
             
-            evaluations.append(np.array([lock_height, eroded_cells, r_trans, c_trans, 
-                                holes, cum_wells, hole_depth, r_holes]))
+            # evaluations.append(np.array([lock_height, eroded_cells, r_trans, c_trans, 
+                                # holes, cum_wells, hole_depth, r_holes]))
+            evaluations.append((lock_height, eroded_cells, r_trans, c_trans, 
+                                holes, cum_wells, hole_depth, r_holes))                                
 
         return evaluations

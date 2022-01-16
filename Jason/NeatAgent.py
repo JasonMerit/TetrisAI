@@ -14,6 +14,7 @@ import neat
 import pickle
 import time
 import pandas as pd
+import random
 
 #import visualize
 
@@ -38,12 +39,13 @@ def eval_genomes(genomes, config):
     nets = []
     envs = []
     ge = []
+    seed = random.randint(0, 1000000)
 
     for _, genome in genomes:
         genome.fitness = 0  # start with fitness level of 0
         net = neat.nn.FeedForwardNetwork.create(genome, config)
         nets.append(net)
-        envs.append(Tetris(True))
+        envs.append(Tetris(True, seed))
         ge.append(genome)
 
     nets = np.array(nets)
@@ -90,7 +92,7 @@ def eval_genomes(genomes, config):
         pickle.dump(best_agent, open("best.pickle_{}".format(gen), "wb"))    
         data.append([gen, total_pp, (time.time() - start_time) / 60])
         csv = pd.DataFrame(data, columns=header)
-        csv.to_csv('Training_13_evening.csv', index=False)
+        csv.to_csv('Training_14.csv', index=False)
         
     
 
