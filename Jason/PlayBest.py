@@ -9,13 +9,13 @@ from Tetris import Tetris
 import pygame
 import numpy as np
 
-# agent = pickle.load(open('best.pickle_260', 'rb'))
-W = np.array([-12.63, 6.6, -9.22, -19.77, -13.08, -10.49, -1.61, -24.04])
+agent = pickle.load(open('best.pickle_510', 'rb'))
+# W = np.array([-12.63, 6.6, -9.22, -19.77, -13.08, -10.49, -1.61, -24.04])
 
 rendering = True
 fps = 15
 
-env = Tetris(False, [], rendering)
+env = Tetris(False, None, [], rendering)
 
 clock = pygame.time.Clock()
 
@@ -65,17 +65,16 @@ while run:
     evaluations = env.get_evaluations(states)
     
     # Pass the evaluation for each state into the NN
-    # outputs = [agent.activate(input) for input in evaluations]
+    outputs = [agent.activate(input) for input in evaluations]
+    # outputs = [np.dot(input, W) for input in evaluations]
     
-    outputs = [np.dot(input, W) for input in evaluations]
-    # evaluations = np.array(evaluations)
 
     # Go to best scored state
     best_index = outputs.index(max(outputs))
     best_state = states[best_index]
     done, _ = env.place_state(best_state) 
     
-    while done:
+    while False and done:
         clock.tick(40)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:

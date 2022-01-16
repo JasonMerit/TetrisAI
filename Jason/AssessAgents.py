@@ -10,8 +10,8 @@ import pandas as pd
 import numpy as np
 
 n = 10 # num of games for assessment 
-max_gen = 100
-header = ["gen", "avg", "var"]
+max_gen = 510
+header = ["gen", "avg", "std"]
 for i in range(n):
     header.append(i+1)
 
@@ -21,7 +21,7 @@ env = Tetris(False)
 data = []
 for gen in np.arange(10, max_gen+10, 10):
     agent = pickle.load(open('best.pickle_{}'.format(gen), 'rb'))
-    print(gen)
+    
     
     # Definitions and default settings
     done = False
@@ -44,26 +44,29 @@ for gen in np.arange(10, max_gen+10, 10):
         # Go to best scored state
         best_index = outputs.index(max(outputs))
         best_state = states[best_index]
-        done = env.place_state(best_state) 
-        step += 1
+        lines_clearead = env.lines_cleared
+        done, _ = env.place_state(best_state) 
+        # step += 1
         
         if done:
-            trial_result.append(step)
-            step = 0
+            trial_result.append(lines_clearead)
+            # trial_result.append(step)
+            # step = 0
             trial += 1
             env.reset()
             done = False
         
         if trial == n:
             noop = np.array(trial_result)
-            data.append([gen, np.mean(noop), np.var(noop)] + trial_result)
+            print(f"{gen}) {np.mean(noop)}")
+            data.append([gen, np.mean(noop), np.std(noop)] + trial_result)
             quit = True
     
     
     
 #print(data)
 csv = pd.DataFrame(data, columns=header)
-csv.to_csv('Trials.csv', index=False)
+csv.to_csv('Trials_14.csv', index=False)
 
     
 env.close()
