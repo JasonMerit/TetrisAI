@@ -4,18 +4,20 @@ import os
 import random
 from tensorflow.keras.layers import Dense
 from collections import deque
+import time
+import pandas as pd
 
 CWD = os.getcwd() + "\\"
 WEIGHT_PATH = os.path.join(CWD + 'WEIGHTS')
 LOG_DIR = os.path.join(CWD + 'LOGS')
 
-MAX_BUFFER_LENGTH = 100000
+MAX_BUFFER_LENGTH = 20000
 MIN_REPLAY_MEMORY_SIZE = 512
 MINIBATCH_SIZE = 64
 
 
 class DQN:
-    def __init__(self, env, state_size=5, discount=0.99, epsilon=1, epsilon_min=0.0001, epsilon_decay=0.9999):
+    def __init__(self, env, state_size=8, discount=0.99, epsilon=1, epsilon_min=0.0001, epsilon_decay=0.9999):
         self.state_size = state_size
         self.model = self.create_model()
         self.discount = discount
@@ -29,6 +31,8 @@ class DQN:
         """Returns a new model."""
         model = tf.keras.models.Sequential([
             Dense(32, input_dim=self.state_size, activation='relu'),
+            Dense(32, activation='relu'),
+            Dense(16, activation='relu'),
             Dense(1, activation='linear'),
         ])
 
@@ -77,13 +81,12 @@ class DQN:
         of tetrominos placed (steps)
         returns an array of the scores achieved each game
         """
-        steps = 0
+        pieces_placed = 0
+        lines = 0
+        data = []
+        start_time = time.time()
 
         for game in range(1, games + 1):
-            if game % 50 == 0:
-                print(f'Game: {game} Steps: {steps} AVG {steps/game}')
-            if game % save == 0:
-                self.save('{}_{}_{}'.format(name, game, steps))
             self.env.reset()
             states = self.env.get_final_states()
             Features_list = self.env.get_evaluations(states)
@@ -91,7 +94,7 @@ class DQN:
             # set the Features from a new game arbitrarily to zero
             current_features = np.zeros(len(Features_list[0]), dtype=np.int64)
             while not done:     # Tetris is done when there are no valid actions left
-                steps += 1
+                pieces_placed += 1
                 action, future_features = self.take_action(states, Features_list)
                 done, reward = self.env.place_state(action)
 
@@ -103,7 +106,18 @@ class DQN:
 
             self.learn()
 
-        return steps
+            lines += self.env.lines_cleared
+
+            if game % 50 == 0:
+                print(f'Game: {game} Steps: {pieces_placed} AVG {pieces_placed/game}')
+            if game % save == 0:
+
+                data.append([game, pieces_placed, lines, (time.time() - start_time)/60])
+                csv = pd.DataFrame(data, columns=['Games', 'Pieces placed', 'Lines cleared', 'Duration'])
+                csv.to_csv('CSVDATA', index=False)
+                self.save('{}_{}'.format(name, game))
+
+        return pieces_placed
 
     def learn(self):
         """

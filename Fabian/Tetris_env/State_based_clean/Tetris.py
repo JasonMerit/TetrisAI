@@ -136,9 +136,9 @@ class Tetris():
     cell_size = 25
 
     # board is for debugging (remember to delete redefinition of height and width)
-    def __init__(self, training, board=[], rendering=False):
+    def __init__(self, training, board=[], rendering=False, height=16):
         self.training = training
-        self.height = 16
+        self.height = height
         self.width = 10
         self.board = board if len(board) != 0 else self.new_board()
         self.piece = Piece()
@@ -236,7 +236,7 @@ class Tetris():
     def new_piece(self):
         """
         Registers current piece into board, creates new piece and
-        returns true if game over.
+        returns true if game over in a tuple with the change in score
         Assumes final piece.
         :return: Bool
         """

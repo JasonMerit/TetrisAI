@@ -10,11 +10,11 @@ import pandas as pd
 import numpy as np
 
 
-env = Tetris(training=False)
-agent = DQN(env, state_size=5, epsilon=0)
+env = Tetris(False, height=20)
+agent = DQN(env, state_size=8, epsilon=0)
 
-n = 50  # num of games for assessment
-max_gen = 10_000
+n = 10  # num of games for assessment
+max_gen = 25000
 header = ["gen", "avg", "var"]
 for i in range(n):
     header.append(i + 1)
@@ -22,15 +22,15 @@ for i in range(n):
 env = Tetris(False)
 
 data = []
-for game_number in np.arange(1000, max_gen + 1000, 1000):
-    agent.load(f'DQN_{game_number}')
+for game_number in np.arange(0, max_gen + 1000, 5000):
+    if game_number > 0:
+        agent.load(f'FORFUN323216_{game_number}')
     # Definitions and default settings
     done = False
     quit = False
 
     trial_result = []
     trial = 0
-    step = 0
 
     while not quit:
         # Let agent determine and take next action
@@ -40,14 +40,14 @@ for game_number in np.arange(1000, max_gen + 1000, 1000):
 
         # Pass the evaluation for each state into the NN
         action, features = agent.take_action(states, evaluations)
-        done = env.place_state(action)
-        step += 1
+        lines_clearead = env.lines_cleared
+        done, _ = env.place_state(action)
+        # step += 1
 
         if done:
-            trial_result.append(step)
-            step = 0
+            trial_result.append(lines_clearead)
+            print(f'Model: {game_number}, Trial number: {trial}, Steps: {lines_clearead}')
             trial += 1
-            env.reset()
             done = False
 
         if trial == n:
@@ -56,6 +56,6 @@ for game_number in np.arange(1000, max_gen + 1000, 1000):
             quit = True
 
 csv = pd.DataFrame(data, columns=header)
-csv.to_csv('Trials.csv', index=False)
+csv.to_csv('Trials_323216.csv', index=False)
 
 env.close()
