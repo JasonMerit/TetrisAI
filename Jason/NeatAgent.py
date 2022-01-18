@@ -91,7 +91,7 @@ def eval_genomes(genomes, config):
 
     pickle.dump(best_agent, open("best.pickle", "wb"))
     
-    if gen % 10 == 0: # Save milestones
+    if gen % 1 == 0: # Save milestones
         pickle.dump(best_agent, open("best.pickle_{}".format(gen), "wb"))    
         data.append([gen, total_pp, total_lc, (time.time() - start_time) / 60])
         csv = pd.DataFrame(data, columns=header)
