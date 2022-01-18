@@ -46,7 +46,7 @@ def flip():
 if h_flip:
     flip()
 
-env = Tetris(False, 10, [], True)
+env = Tetris(False, None, board, True)
 env.set_state((x, y, 0))
 
 def get_grid():
@@ -204,7 +204,7 @@ def holes_depth_and_row_holes():
 
     return holes, hole_depth, len(row_holes)
 
-print(holes_depth_and_row_holes())
+#print(holes_depth_and_row_holes())
 
 def negate(arr):
     # https://stackoverflow.com/questions/56594598/change-1s-to-0-and-0s-to-1-in-numpy-array-without-looping
@@ -340,6 +340,17 @@ def row_transitions():
 
 # print(row_transitions())
 
+def full_rows(): # Fuse with full lines
+    grid =  board[2:2 + height, 3:3 + width] # Hvor 0?
+    
+    rows = 0
+    for r in grid:  
+        if r.all():
+            rows += 1
+    
+    return rows
+
+#print(full_rows())
 
 env.render()
 draw()

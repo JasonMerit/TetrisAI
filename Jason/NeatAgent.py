@@ -18,10 +18,11 @@ import random
 
 #import visualize
 
-header = ['Gen', 'Pieces Placed', 'Computation Time [min]']
+header = ['Gen', 'Pieces Placed', 'Lines Cleared', 'Computation Time [min]']
 data = []
 gen = 0
 total_pp = 0
+total_lc = 0
 start_time = time.time()
 
 def eval_genomes(genomes, config):
@@ -29,7 +30,7 @@ def eval_genomes(genomes, config):
     runs the simulation of the current population of
     agents and sets their fitness based on score.
     """
-    global gen, total_pp, data
+    global gen, total_pp, total_lc, data
     gen += 1
     
 
@@ -77,6 +78,8 @@ def eval_genomes(genomes, config):
             ge[x].fitness += int(reward)
             rem[x] = done
             total_pp += 1
+            if done:
+                total_lc += env.lines_cleared
         
         # Remove loser envs (rem == 0 - if done = False)
         best_agent = nets[0]
@@ -90,9 +93,9 @@ def eval_genomes(genomes, config):
     
     if gen % 10 == 0: # Save milestones
         pickle.dump(best_agent, open("best.pickle_{}".format(gen), "wb"))    
-        data.append([gen, total_pp, (time.time() - start_time) / 60])
+        data.append([gen, total_pp, total_lc, (time.time() - start_time) / 60])
         csv = pd.DataFrame(data, columns=header)
-        csv.to_csv('Training_14.csv', index=False)
+        csv.to_csv('Training_test.csv', index=False)
         
     
 
