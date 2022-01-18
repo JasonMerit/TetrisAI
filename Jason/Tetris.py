@@ -136,10 +136,10 @@ class Tetris():
     cell_size = 25
 
     # board is for debugging (remember to delete redefinition of height and width)
-    def __init__(self, training, seed = None, board = [], rendering=False):
+    def __init__(self, training, seed = None, board = [], rendering=False, height = 16):
         self.training = training
         random.seed(seed)
-        self.height = 16
+        self.height = height
         self.width = 10
         self.board = board if len(board) != 0 else self.new_board()
         self.piece = Piece()
@@ -172,7 +172,6 @@ class Tetris():
             self.STAT_FONT = pygame.font.SysFont("comicsans", 35)
             self.screen = pygame.display.set_mode([self.screen_size, self.screen_size])
             pygame.display.set_caption('Tetris')
-            self.background = pygame.Surface(self.screen.get_size())
             
     def get_grid(self):
         return self.board[2:2 + self.height, 3:3 + self.width]
@@ -781,6 +780,41 @@ class Tetris():
             hole_depth += sum(indice) - c_holes + 1   
 
         return holes, hole_depth, len(row_holes)
+    
+    def holes(self, board):
+        """
+        Hole is any empty space below a any full cell
+        """
+        holes = 0
+        grid = board[2:2 + self.height, 3:3 + self.width]
+        
+        for x in range(len(grid[0])): # Iterate through columns
+            c = grid[:, x]
+            
+            # Get relevant part of column
+            top = np.argmax(c)
+            
+            c_down = c[top:]
+            
+            # Find indice and amount of holes within column
+            indice = np.where(c_down == 0)[0]
+            c_holes = len(indice)
+            if c_holes == 0: # Zero holes
+                continue
+            
+            holes += c_holes 
+
+        return holes
+    
+    def get_full_rows(self, board): # Fuse with full lines
+        grid =  board[2:2 + self.height, 3:3 + self.width] # Hvorfor 0?
+        
+        rows = 0
+        for r in grid:  
+            if r.all():
+                rows += 1
+        
+        return rows
 
     def get_evaluations(self, states):
         """
@@ -810,10 +844,17 @@ class Tetris():
             c_trans = self.column_transitions(board)
             cum_wells = self.cum_wells(board)
             holes, hole_depth, r_holes = self.holes_depth_and_row_holes(board)
+            # lines_cleared = self.get_full_rows(board)
+            # holes = self.holes(board)
             
-            # evaluations.append(np.array([lock_height, eroded_cells, r_trans, c_trans, 
-                                # holes, cum_wells, hole_depth, r_holes]))
+            #Intelligent
             evaluations.append((lock_height, eroded_cells, r_trans, c_trans, 
                                 holes, cum_wells, hole_depth, r_holes))                                
+            
+            # Primitive
+            # evaluations.append((lock_height, r_trans, c_trans, 
+                                # lines_cleared, holes))
+            
+            
 
         return evaluations
