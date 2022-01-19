@@ -14,7 +14,7 @@ fps = 15
 env = Tetris(training=False, rendering=rendering, height=20)
 
 agent = DQN(env, state_size=8, epsilon=0)
-agent.load('With_data_35000')
+agent.load('Backup_35000')
 
 clock = pygame.time.Clock()
 

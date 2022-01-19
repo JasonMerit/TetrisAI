@@ -114,7 +114,7 @@ class DQN:
 
                 data.append([game, pieces_placed, lines, (time.time() - start_time)/60])
                 csv = pd.DataFrame(data, columns=['Games', 'Pieces placed', 'Lines cleared', 'Duration'])
-                csv.to_csv('CSVDATA', index=False)
+                csv.to_csv(name, index=False)
                 self.save('{}_{}'.format(name, game))
 
         return pieces_placed
