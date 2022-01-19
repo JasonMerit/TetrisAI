@@ -10,8 +10,8 @@ import pandas as pd
 import numpy as np
 from sys import exit
 
-n = 2 # num of games for assessment 
-max_gen = 7
+n = 30 # num of games for assessment 
+max_gen = 400
 extending = True
 
 header = ["Gen"]
@@ -24,6 +24,8 @@ if not extending:
 else:
     data_pieces = np.array(pd.read_csv('Trials_pieces.csv'))
     ext_pieces = np.zeros([len(data_pieces), n])
+    data_lines = np.array(pd.read_csv('Trials_lines.csv'))
+    ext_lines = np.zeros([len(data_lines), n])
     # three = np.resize(three, len(data_pieces))
     # print(three)
     # data_pieces = np.c_[data_pieces, ext_pieces]
@@ -33,7 +35,7 @@ else:
 # exit()
 
 
-for i, gen in enumerate(np.arange(1, max_gen+1, 1)):
+for i, gen in enumerate(np.arange(10, max_gen+10, 10)):
     agent = pickle.load(open('best.pickle_{}'.format(gen), 'rb'))
     
     done = False # True when game over
@@ -88,9 +90,10 @@ for i, gen in enumerate(np.arange(1, max_gen+1, 1)):
                 csv = pd.DataFrame(csv)
                 csv.to_csv('Trials_pieces.csv', index=False)
                 
-                # data_lines.append([gen] + trial_lines)
-                # csv = pd.DataFrame(data_lines)
-                # csv.to_csv('Trials_lines.csv', index=False)
+                ext_lines[i] = np.array(trial_lines)
+                csv = np.c_[data_lines, ext_lines]
+                csv = pd.DataFrame(csv)
+                csv.to_csv('Trials_lines.csv', index=False)
                 
             
             quit = True
