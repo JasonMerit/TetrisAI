@@ -9,8 +9,8 @@ from Tetris import Tetris
 import pygame
 import numpy as np
 
-agent = pickle.load(open('best.pickle', 'rb'))
-# W = np.array([-12.63, 6.6, -9.22, -19.77, -13.08, -10.49, -1.61, -24.04])
+# agent = pickle.load(open('best.pickle', 'rb'))
+W = np.array([-12.63, 6.6, -9.22, -19.77, -13.08, -10.49, -1.61, -24.04])
 
 rendering = True
 fps = 15
@@ -65,8 +65,8 @@ while run:
     evaluations = env.get_evaluations(states)
     
     # Pass the evaluation for each state into the NN
-    outputs = [agent.activate(input) for input in evaluations]
-    # outputs = [np.dot(input, W) for input in evaluations]
+    # outputs = [agent.activate(input) for input in evaluations]
+    outputs = [np.dot(input, W) for input in evaluations]
     
 
     # Go to best scored state

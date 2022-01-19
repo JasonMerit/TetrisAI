@@ -8,31 +8,25 @@ import pickle
 from Tetris import Tetris
 import pandas as pd
 import numpy as np
-from sys import exit
 
-n = 30 # num of games for assessment 
-max_gen = 400
-extending = True
 
-header = ["Gen"]
+n = 1 # num of games for assessment 
+extending = False
+max_gen = 150
+file_name = "Trials_17_eve.csv"
+# REMEBER TO CHANGE AGENT LOAD
 
-env = Tetris(False)
+# header = ["Gen"]
+
+env = Tetris(True)
 
 if not extending:
-    data_pieces = []
-    data_lines = []
+    data = []
 else:
-    data_pieces = np.array(pd.read_csv('Trials_pieces.csv'))
-    ext_pieces = np.zeros([len(data_pieces), n])
-    data_lines = np.array(pd.read_csv('Trials_lines.csv'))
-    ext_lines = np.zeros([len(data_lines), n])
-    # three = np.resize(three, len(data_pieces))
-    # print(three)
-    # data_pieces = np.c_[data_pieces, ext_pieces]
-    # data_pieces[0, 4] = 1
-    # print(data_pieces)
+    data = np.array(pd.read_csv(file_name))
+    ext_lines = np.zeros([len(data), n])
 
-# exit()
+
 
 
 for i, gen in enumerate(np.arange(10, max_gen+10, 10)):
@@ -41,10 +35,9 @@ for i, gen in enumerate(np.arange(10, max_gen+10, 10)):
     done = False # True when game over
     quit = False # True when done with current agent
     
-    trial_pieces = []
+    
     trial_lines = []
     trial = 0
-    step = 0
     
     # Begin trialing n times
     while not quit:    
@@ -59,12 +52,9 @@ for i, gen in enumerate(np.arange(10, max_gen+10, 10)):
         # Go to best scored state
         best_index = outputs.index(max(outputs))
         best_state = states[best_index]
-        done, _ = env.place_state(best_state) 
-        step += 1
+        done, _ = env.place_state(best_state)
         
         if done:
-            trial_pieces.append(step)
-            step = 0
             trial_lines.append(env.lines_cleared)
             env.reset()
             
@@ -72,28 +62,16 @@ for i, gen in enumerate(np.arange(10, max_gen+10, 10)):
             done = False
         
         if trial == n:
+            print(f"{gen}) max_lines: {max(trial_lines)}")
             if not extending:
-                print(f"{gen}) max_lines: {max(trial_lines)}")
-                
-                data_pieces.append([gen] + trial_pieces)
-                csv = pd.DataFrame(data_pieces)
-                csv.to_csv('Trials_pieces.csv', index=False)
-                
-                data_lines.append([gen] + trial_lines)
-                csv = pd.DataFrame(data_lines)
-                csv.to_csv('Trials_lines.csv', index=False)
+                data.append([gen] + trial_lines)
+                csv = pd.DataFrame(data)
+                csv.to_csv(file_name, index=False)
             else:
-                print(f"{gen}) max_lines: {max(trial_lines)}")
-                
-                ext_pieces[i] = np.array(trial_pieces)
-                csv = np.c_[data_pieces, ext_pieces]
-                csv = pd.DataFrame(csv)
-                csv.to_csv('Trials_pieces.csv', index=False)
-                
                 ext_lines[i] = np.array(trial_lines)
-                csv = np.c_[data_lines, ext_lines]
+                csv = np.c_[data, ext_lines]
                 csv = pd.DataFrame(csv)
-                csv.to_csv('Trials_lines.csv', index=False)
+                csv.to_csv(file_name , index=False)
                 
             
             quit = True

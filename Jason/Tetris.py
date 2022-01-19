@@ -576,7 +576,7 @@ class Tetris():
         self.set_state(state)
         return self.new_piece()
 
-    # %% Evaulation and heuristics
+    # %% Evaulation and features
 
     def board_height(self):
         """Return the height of the board."""
@@ -815,7 +815,7 @@ class Tetris():
 
     def get_evaluations(self, states):
         """
-        Return evaluations in regards to heuristcs of given states
+        Return evaluations in regards to features of given states
         :param: states to be evaluated (List)
         :return: List
         """
@@ -836,19 +836,23 @@ class Tetris():
             # evaluations.append((holes, full_lines, lock_height, bumpiness, eroded_cells))
 
             lock_height = self.lock_height()  # Note that placed board is not used here
-            # eroded_cells, _ = self.eroded_cells(board)
+            eroded_cells, _ = self.eroded_cells(board)
             r_trans = self.row_transitions(board)
             c_trans = self.column_transitions(board)
-            # cum_wells = self.cum_wells(board)
-            # holes, hole_depth, r_holes = self.holes_depth_and_row_holes(board)
-            lines_cleared = self.get_full_rows(board)
-            holes = self.holes(board)
+            cum_wells = self.cum_wells(board)
+            holes, hole_depth, r_holes = self.holes_depth_and_row_holes(board)
+            # lines_cleared = self.get_full_rows(board)
+            # holes = self.holes(board)
 
             # Intelligent
             # evaluations.append((lock_height, eroded_cells, r_trans, c_trans,
             # holes, cum_wells, hole_depth, r_holes))
 
             # Primitive
-            evaluations.append((lock_height, r_trans, c_trans, lines_cleared, holes))
+            # evaluations.append((lock_height, r_trans, c_trans, lines_cleared, holes))
+            
+            # Linear
+            evaluations.append(np.array((lock_height, eroded_cells, r_trans, c_trans,
+                                        holes, cum_wells, hole_depth, r_holes)))
 
         return evaluations
