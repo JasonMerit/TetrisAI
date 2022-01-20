@@ -51,9 +51,11 @@ def eval_genomes(genomes, config):
         ge.append(genome)
     
         agent = net
-        print(len(agent.node_evals))
-        print(len(agent.output_nodes))
-        print(agent.values)
+        # print(agent.node_evals[0])
+        # print(f"Input: {agent.input_nodes}")
+        print(f"something: {len(agent.node_evals)}")
+        # print(f"Output: {len(agent.output_nodes)}")
+        # print(agent.values)
         exit()
 
     nets = np.array(nets)

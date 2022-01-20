@@ -9,8 +9,8 @@ from Tetris import Tetris
 import pygame
 import numpy as np
 
-# agent = pickle.load(open('best.pickle', 'rb'))
-W = np.array([-12.63, 6.6, -9.22, -19.77, -13.08, -10.49, -1.61, -24.04])
+agent = pickle.load(open('best.pickle_230', 'rb'))
+# W = np.array([-12.63, 6.6, -9.22, -19.77, -13.08, -10.49, -1.61, -24.04])
 
 rendering = True
 fps = 15
