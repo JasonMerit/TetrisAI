@@ -14,7 +14,7 @@ fps = 15
 env = Tetris(training=False, rendering=rendering, height=16)
 
 agent = DQN(env, state_size=8, epsilon=0)
-agent.load('Backup_18500')
+agent.load('Backup_30500')
 
 
 # Definitions and default settings
@@ -23,7 +23,7 @@ action_taken = False
 slow = True
 done = False
 
-
+clock = pygame.time.Clock()
 while run:
     if rendering:
         clock.tick(fps)
