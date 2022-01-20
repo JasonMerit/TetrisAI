@@ -15,6 +15,7 @@ import pickle
 import time
 import pandas as pd
 import random
+from sys import exit
 
 #import visualize
 
@@ -48,6 +49,12 @@ def eval_genomes(genomes, config):
         nets.append(net)
         envs.append(Tetris(True, seed))
         ge.append(genome)
+    
+        agent = net
+        print(len(agent.node_evals))
+        print(len(agent.output_nodes))
+        print(agent.values)
+        exit()
 
     nets = np.array(nets)
     envs = np.array(envs)
@@ -91,7 +98,8 @@ def eval_genomes(genomes, config):
 
     pickle.dump(best_agent, open("best.pickle", "wb"))
     
-    if gen % 1 == 0: # Save milestones
+    
+    if gen % 10 == 0: # Save milestones
         pickle.dump(best_agent, open("best.pickle_{}".format(gen), "wb"))    
         data.append([gen, total_pp, total_lc, (time.time() - start_time) / 60])
         csv = pd.DataFrame(data, columns=header)
