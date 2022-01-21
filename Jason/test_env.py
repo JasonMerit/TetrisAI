@@ -4,13 +4,13 @@ TestingEnvironment. Draw and manipulate board to see how environment
 responds. All rendering is done from this script.
 """
 import numpy as np
-from Tetris import Tetris
+from TetrisDRAW import Tetris
 import pygame
 import os
 os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (40,40)
 
 h_flip = False
-x, y = 3, 5#11
+x, y = 5, 2#11
 
 circles = []
 
@@ -26,14 +26,30 @@ board = np.array([[1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
                  [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
                  [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
                  [1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
-                 [1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1],
-                 [1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-                 [1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1],
-                 [1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1],
-                 [1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1],
+                 [1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+                 [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+                 [1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+                 [1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+                 [1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
                  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
                  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
                  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]])
+
+
+board = np.array([[1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+                  [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+                  [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+                  [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+                  [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+                  [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+                  [1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+                  [1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                  [1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1],
+                  [1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1],
+                  [1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1],
+                  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]])
 
 height = len(board) - 4
 width = len(board[0]) - 5
@@ -177,34 +193,36 @@ def holes_depth_and_row_holes():
     """
     Hole is any empty space below a any full cell
     Hole depth is vertical distance of full cells above hole
+    Row holes are number of rows with at least one occurrence of holes
     """
     holes = 0
     hole_depth = 0
     row_holes = set()
-    grid = get_grid()
-    
-    for x in range(len(grid[0])): # Iterate through columns
+    grid = board[2:2 + height, 3:3 + width]
+
+    for x in range(len(grid[0])):  # Iterate through columns
         c = grid[:, x]
-        
+
         # Get relevant part of column
         top = np.argmax(c)
-        
+
         c_down = c[top:]
-        
+
         # Find indice and amount of holes within column
         indice = np.where(c_down == 0)[0]
         # print(indice+top+2)
         c_holes = len(indice)
-        row_holes = row_holes.union(set(indice+top+2))
-        if c_holes == 0: # Zero holes
-            continue
         
+        row_holes = row_holes.union(set(indice + top))
+        if c_holes == 0:  # Zero holes
+            continue
+        print(x, c_holes)
         holes += c_holes
-        hole_depth += sum(indice) - c_holes + 1   
+        hole_depth += sum(indice) - c_holes + 1
 
     return holes, hole_depth, len(row_holes)
 
-#print(holes_depth_and_row_holes())
+print(holes_depth_and_row_holes())
 
 def negate(arr):
     # https://stackoverflow.com/questions/56594598/change-1s-to-0-and-0s-to-1-in-numpy-array-without-looping
@@ -305,13 +323,13 @@ def column_transitions():
     :return: Int
     """    
     total_transitions = 0
-    board = get_grid()
-    for column in range(env.width):
-        if board[:, column].any(): # Skip empty columns
-            top = np.argmax(board[:, column])
+    grid = board[2:2 + height, 3:3 + width]
+    for column in range(width):
+        if grid[:, column].any():  # Skip empty columns
+            top = np.argmax(grid[:, column])
             previous_square = 1
-            for y in range(top, env.height):
-                if board[y, column] != previous_square:
+            for y in range(top, height):
+                if grid[y, column] != previous_square:
                     total_transitions += 1
                     previous_square = int(not previous_square)
 
@@ -338,7 +356,7 @@ def row_transitions():
 
     return total_transitions
 
-# print(row_transitions())
+print(row_transitions())
 
 def full_rows(): # Fuse with full lines
     grid =  board[2:2 + height, 3:3 + width] # Hvor 0?
