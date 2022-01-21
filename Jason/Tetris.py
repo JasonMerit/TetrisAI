@@ -1,7 +1,6 @@
-# Tetris 
+# Tetris
 
 import pygame
-
 import numpy as np
 import random
 
@@ -85,7 +84,6 @@ class Piece:
     def __init__(self):
         """
         Initialize the object positioned at the top of board
-        :param teromino: shape of piece (int)
         :return: None
         """
         self.rotation = 0
@@ -99,8 +97,8 @@ class Piece:
 
     def rotate(self, clockwise=True):
         """
-        Rotates piece in either direction
-        :param clockwise: Rotates clockwise if true else counter-clockwise (bool)
+        Rotates piece in either direction.
+        :param clockwise: Flag for rotation direction.
         :return: None
         """
         dir = 1 if clockwise else -1
@@ -108,7 +106,7 @@ class Piece:
         self.rotation = (self.rotation + dir) % num_rotations
         self.shape = self.shapes[self.tetromino][self.rotation]
 
-    def change(self): # debugging
+    def change(self):
         """
         Change current piece to another piece (for debugging)
         :return: None
@@ -122,7 +120,7 @@ class Piece:
 
 class Tetris():
     """
-    Tetris class acting as enviroment.
+    Tetris class acting as enviroment for the models.
     The game data is represented using a 2d numpy array representing the board,
     and piece objects. The board is extended out of view for easy collision
     detection. Occationally sub arrays called grids representing the visual
@@ -136,8 +134,8 @@ class Tetris():
     cell_size = 25
 
     # board is for debugging (remember to delete redefinition of height and width)
-    def __init__(self, training, seed = None, board = [], rendering=False, height = 20):
-        self.training = training
+    def __init__(self, auto_reset, seed = None, board = [], rendering=False, height = 20):
+        self.auto_reset = auto_reset
         random.seed(seed)
         self.height = height
         self.width = 10
@@ -147,21 +145,16 @@ class Tetris():
 
         self.pieces_placed = 0
         self.lines_cleared = 0
-        self.score = 0 # wHAT SHOULD score be measured as?
+        self.score = 0
         self.dict_lines_score = {0:0, 1:40, 2:100, 3:300, 4:1200}
         self.highscore = 0
-
-        self.current_score = 0
-        self.current_lines = 0
-        self.current_height = 0
-        self.number_of_lines = 0
 
         if rendering:
             # Initialize pygame and fonts
             pygame.init()
             pygame.font.init()
             
-            # Rendering Dimensions
+            # Rendering sizes
             self.height = len(self.board) - 4
             self.width = len(self.board[0]) - 5
             self.top_left_y = self.screen_size / 2 - self.height * self.cell_size / 2
@@ -174,13 +167,15 @@ class Tetris():
             pygame.display.set_caption('Tetris')
             
     def get_grid(self):
+        """
+        Returns visual part of board
+        """
         return self.board[2:2 + self.height, 3:3 + self.width]
 
     def step(self, action):
         """
         Applies the given action in the environment.
-        It works by taking the action and redoing if the piece ends up
-        in an invalid configuration.
+        Does nothing if action results in collision.
         :param action: Action given to environment (String)
         :return: None
         """
@@ -221,14 +216,14 @@ class Tetris():
     def valid_position(self):
         """
         Returns whether the current position is valid.
-        Assumes piece is not out of bounds.
+        Assumes piece is within board.
         """
         # Get area of board the shape covers
         x, y = self.piece.x, self.piece.y
         size = len(self.piece.shape)
         piece_pos = self.board[y:y + size, x:x + size]
 
-        # Check for collision by summing and checking values of 2
+        # Check for collision by summing and checking for any values of 2
         if np.any(self.piece.shape + piece_pos == 2):
             return False
         return True
@@ -240,8 +235,7 @@ class Tetris():
         Assumes final piece.
         :return: Bool
         """
-        self.pieces_placed += 1
-        
+        self.pieces_placed += 1        
 
         # Find coordinates the current piece inhabits
         indices = np.where(self.piece.shape == 1)
@@ -253,6 +247,7 @@ class Tetris():
         for c in coords:
             self.board[c] = 1
         
+        # Get change in score before changing board
         change_score = self.get_change_in_score()
         self.score += change_score
 
@@ -264,8 +259,8 @@ class Tetris():
         # Game over if spawning piece is overlapping
         game_over = not self.valid_position()
         
-        # Reset game if not training
-        if game_over and not self.training:
+        # Reset game if auto_reset
+        if game_over and self.auto_reset:
             self.reset()
 
         return game_over, change_score
@@ -391,7 +386,6 @@ class Tetris():
         score_label = self.STAT_FONT.render(str(self.lines_cleared), 1, (255, 255, 255))
         self.screen.blit(score_label, (self.screen_size - score_label.get_width() - 70, 380))
 
-        
 
         # Display
         pygame.display.flip()
@@ -408,7 +402,6 @@ class Tetris():
         self.board = self.new_board()
         self.piece = Piece()
         self.next_piece = Piece()
-        self.shift_piece = None # debugging
 
     def close(self):
         """
@@ -421,14 +414,15 @@ class Tetris():
 
     def get_state(self):
         """
-        Returns position and rotations of current piece
+        Returns position and rotations of current piece.
         :return: Tuple
         """
         return self.piece.x, self.piece.y, self.piece.rotation
 
     def set_state(self, state):
         """
-        Sets current piece to given state
+        Sets current piece to given state.
+        :param state: Given state.
         """        
         self.piece.x = state[0]
         self.piece.y = state[1]
@@ -439,6 +433,7 @@ class Tetris():
         """
         Do action, observe state and undo action.
         Returns None if state is invalid.
+        :param action: Action given to environment (String)
         :return: Tuple
         """
         initial_state = self.get_state()
@@ -497,6 +492,11 @@ class Tetris():
         return final
 
     def get_top(self):
+        """
+        Returns highest possible posistion for current piece
+        :return: Int
+        """
+        
         grid = self.get_grid()
         top = len(grid)
 
@@ -518,7 +518,7 @@ class Tetris():
     def get_final_states(self):
         """
         Using BFS return all possible final states.
-        Shout out to Rune for height hack
+        Shout out to Rune for height hack.
         :return: List
         """
         first_state = self.get_state()
@@ -527,35 +527,30 @@ class Tetris():
 
         queue = [top_state]
         expanded = set()
-        step = 0 # debugging (and prints)
         while queue:
             expanding_state = queue.pop(0)
-            # print("[{}] {}".format(step, expanding_state))
-            # print("queue: {}".format(queue))
-            # print("expanded: {}".format(expanded))
             if expanding_state in expanded:
-                # print("continue\n")
-                step += 1
                 continue
-
+            
+            # Expand state and find after states
             self.set_state(expanding_state)
             after_states = self.get_after_states()
-            # print("visited: {}".format(after_states))
+            
+            # Add results to queue and dump curren expanding state into set
             queue += after_states
             expanded.add(expanding_state)
-            step += 1
-            # print("")
+            
 
         # Filter out all non-final states and convert to list
         final_states = [state for state in expanded if self.is_final_state(state)]
 
-        self.set_state(first_state)  # Shouldn't have to do this
-
+        self.set_state(first_state)
         return final_states
 
     def get_placed_board(self):
         """
         Return board after placing piece
+        :return: np.array
         """
         # Find coordinates the current piece inhabits
         indices = np.where(self.piece.shape == 1)
@@ -581,43 +576,17 @@ class Tetris():
 
     # %% Evaulation and heuristics
 
-    def board_height(self):
-        """Return the height of the board."""
-        board = self.board[2:22, 3:13]
+    def board_height(self): 
+        """
+        Return the height of the board.
+        UNUSUED FEATURE.
+        :return: Int
+        """
+        grid = self.board[2:22, 3:13]
         # look for any piece in any row
-        board = board.any(axis=1)
+        grid = grid.any(axis=1)
         # take to sum to determine the height of the board
-        return board.sum()
-
-    def old_holes(self, board):
-        """
-        Hole is any empty space below the top full cell on neihbours
-        and current column
-        """
-        holes = 0
-        for x in range(3, 13):  # Count within visual width
-            # cc = current_column, lc = left_column, rc = right_column
-            lc, cc, rc = board[:, x - 1], board[:, x], board[:, x + 1]
-            top = np.argmax(cc)
-
-            # Get relevant columns
-            lc_down = lc[top:]  # same height, left and down
-            cc_down = cc[top + 1:]  # below and down
-            rc_down = rc[top:]  # same height, right and down
-
-            # Revert holes to filled for easy sum
-            lc_down = self.negate(lc_down)
-            cc_down = self.negate(cc_down)
-            rc_down = self.negate(rc_down)
-
-            holes += sum(lc_down) #+ sum(cc_down) + sum(rc_down) #Bible definition debug
-
-        return holes
-
-    def negate(self, arr): #debug (not used with new definition)
-        # Code from stackoverflow.com
-        # https://stackoverflow.com/questions/56594598/change-1s-to-0-and-0s-to-1-in-numpy-array-without-looping
-        return np.where((arr == 0) | (arr == 1), arr ^ 1, arr)
+        return grid.sum()
 
     def full_lines(self, board):
         """
@@ -625,7 +594,6 @@ class Tetris():
         :params board: Board of interest (np.array)
         :return: Int
         """
-        # Get visual part of board
         grid = board[2:2 + self.height, 3:3 + self.width]
 
         full_lines = np.sum([r.all() for r in grid])
@@ -635,6 +603,9 @@ class Tetris():
     def bumpiness(self, board):
         """
         Bumpiness: The difference in heights between neighbouring columns
+        UNUSED FEATURE.
+        :params board: Board of interest (np.array)
+        :return: Int
         """
         grid = board[2:2 + self.height + 1, 3:3 + self.width]  # Keep one floor
 
@@ -644,7 +615,12 @@ class Tetris():
 
         return bumpiness
     
-    def eroded_cells(self, board): # Fuse with full lines
+    def eroded_cells(self, board):
+        """
+        Returns eroded cells and lines cleared.
+        :return: Tuple
+        """
+        
         grid =  board[0:2 + self.height, 3:3 + self.width]
         
         row = np.array([])
@@ -652,18 +628,15 @@ class Tetris():
             if grid[r].all():
                 row = np.append(row, r)
         
-        # Find y-values the current piece inhabits
+        # Find y-values the current piece inhabits.
         indices = np.where(self.piece.shape == 1)
         ys = indices[0] + self.piece.y
         
+        # Count overlapping cells.
         piece_cells = 0
         for y in ys:
             if y in row:
                 piece_cells += 1
-                
-        # print(f"rows: {len(row)}")
-        # print("piece_cells: {}".format(piece_cells))
-        # print("eroded_cells: {}".format(piece_cells * len(row)))
         
         return piece_cells * len(row), len(row)
     
@@ -687,8 +660,6 @@ class Tetris():
                         previous_square = int(not previous_square)
 
         return total_transitions
-
-    # print(column_transitions())
 
     def row_transitions(self, board):
         """
@@ -764,7 +735,7 @@ class Tetris():
             c = grid[:, x]
             
             # Get relevant part of column
-            top = np.argmax(c)
+            top = np.argmax(c) # BUG: Returns first index for empty columns
             
             c_down = c[top:]
             
@@ -828,33 +799,14 @@ class Tetris():
             self.set_state(state) # Set piece to state
             board = self.get_placed_board() # Place piece
 
-            # eroded_cells, full_lines = self.eroded_cells(board)
-
-            # holes = self.holes(board)
-            # full_lines = self.full_lines(board)
-            # lock_height = self.lock_height()
-            # bumpiness = self.bumpiness(board)
-            # holes, hole_depth = self.holes_and_depth(board)
-
-            # evaluations.append((holes, full_lines, lock_height, bumpiness, eroded_cells))
             
-            lock_height = self.lock_height() # Note that placed board is not used here
+            lock_height = self.lock_height()
             eroded_cells, _ = self.eroded_cells(board)
             r_trans = self.row_transitions(board)
             c_trans = self.column_transitions(board)
             cum_wells = self.cum_wells(board)
             holes, hole_depth, r_holes = self.holes_depth_and_row_holes(board)
-            # lines_cleared = self.get_full_rows(board)
-            # holes = self.holes(board)
             
-            #Intelligent
             evaluations.append((lock_height, eroded_cells, r_trans, c_trans, 
                                  holes, cum_wells, hole_depth, r_holes))                                
-            
-            # Primitive
-            #evaluations.append((lock_height, r_trans, c_trans, 
-            #                    lines_cleared, holes))
-            
-            
-
         return evaluations

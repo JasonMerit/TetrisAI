@@ -1,23 +1,13 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Jan  5 13:04:52 2022
-
-@author: Jason
-"""
-
+# Training environment for NEAT
 
 import os
 from Tetris import Tetris
 import numpy as np
-
 import neat
 import pickle
 import time
 import pandas as pd
 import random
-from sys import exit
-
-#import visualize
 
 header = ['Gen', 'Pieces Placed', 'Lines Cleared', 'Computation Time [min]']
 data = []
@@ -33,7 +23,6 @@ def eval_genomes(genomes, config):
     """
     global gen, total_pp, total_lc, data
     gen += 1
-    
 
     # start by creating lists holding the genome itself, the
     # neural network associated with the genome and the
@@ -47,16 +36,8 @@ def eval_genomes(genomes, config):
         genome.fitness = 0  # start with fitness level of 0
         net = neat.nn.FeedForwardNetwork.create(genome, config)
         nets.append(net)
-        envs.append(Tetris(True, seed))
+        envs.append(Tetris(False, seed))
         ge.append(genome)
-    
-        # agent = net
-        # print(agent.node_evals[0])
-        # print(f"Input: {agent.input_nodes}")
-        # print(f"something: {len(agent.node_evals)}")
-        # print(f"Output: {len(agent.output_nodes)}")
-        # print(agent.values)
-        # exit()
 
     nets = np.array(nets)
     envs = np.array(envs)
@@ -126,18 +107,12 @@ def run(config_file):
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
-    #p.add_reporter(neat.Checkpointer(5))
 
     # Run and indefinite amount of generations.
     winner = p.run(eval_genomes)
 
     # show final stats
-    print('\nBest genome:\n{!s}'.format(winner))
-    #visualize.draw_net(config, winner, True)
-    #visualize.plot_stats(stats, ylog=False, view=True)
-    #visualize.plot_species(stats, view=True)
-    
-    
+    print('\nBest genome:\n{!s}'.format(winner)) 
 
 
 if __name__ == '__main__':
