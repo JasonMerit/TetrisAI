@@ -63,12 +63,13 @@ ax1.tick_params(axis='y')
 
 ax2 = ax1.twinx()
 
-ax2.set_ylabel('Training time [hours]')
+ax2.set_ylabel('Cumulative training time [hours]')
 lns4 = ax2.plot(X, Y2/60, ':', color=color1, label='DQN training time')
 lns5 = ax2.plot(X, Y4/60, ':', color=color2, label='NEAT training time')
 ax2.tick_params(axis='y')
 lns = lns1+lns2+lns3+lns4+lns5
 labs = [l.get_label() for l in lns]
 ax1.legend(lns, labs, loc=0)
+plt.title('Training and testing of DQN and NEAT')
 fig.tight_layout()
 plt.show()
