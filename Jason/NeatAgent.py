@@ -50,13 +50,13 @@ def eval_genomes(genomes, config):
         envs.append(Tetris(True, seed))
         ge.append(genome)
     
-        agent = net
+        # agent = net
         # print(agent.node_evals[0])
         # print(f"Input: {agent.input_nodes}")
-        print(f"something: {len(agent.node_evals)}")
+        # print(f"something: {len(agent.node_evals)}")
         # print(f"Output: {len(agent.output_nodes)}")
         # print(agent.values)
-        exit()
+        # exit()
 
     nets = np.array(nets)
     envs = np.array(envs)
