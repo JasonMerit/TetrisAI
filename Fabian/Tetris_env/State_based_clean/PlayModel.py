@@ -14,7 +14,7 @@ fps = 15
 env = Tetris(training=False, rendering=rendering, height=16)
 
 agent = DQN(env, state_size=8, epsilon=0)
-agent.load('Backup_30500')
+agent.load('Backup_18500')
 
 
 # Definitions and default settings

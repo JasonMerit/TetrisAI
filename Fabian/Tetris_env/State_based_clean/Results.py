@@ -28,6 +28,11 @@ df4 = pd.read_csv(f'{neat_training}.csv')
 data4 = np.array(df4)
 df5 = pd.read_csv(f'{linear_lines}')
 data5 = np.array(df5)
+for i in range(1, 4):
+    df = pd.read_csv(f'Trials_Linear_v{i}_16.csv')
+    print(i, np.mean(np.array(df)))
+    data5 = np.append(data5, np.array(df))
+
 
 X = np.linspace(0, 36, 72)
 Y1 = np.array([n for m in data for n in m])
